@@ -1,3 +1,4 @@
+import {TypeGuard} from '@sora-soft/type-guard';
 
 export class CancelError extends Error {
   readonly name = 'CancelError' as const;
@@ -84,6 +85,13 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
     return this.#promise.finally(onfinally);
   }
 
+  addCancelHandler(handler: () => void) {
+    if (this.#state !== CancelablePromiseState.PENDING) {
+      throw new Error(`The \`addCancelHandler\` method was called after the promise ${this.#state}.`);
+    }
+    this.#cancelHandlers.push(handler);
+  }
+
   cancel(reason?: string) {
     if (this.#state !== CancelablePromiseState.PENDING) {
       return;
@@ -91,19 +99,14 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
 
     this.#setState(CancelablePromiseState.CANCELED);
 
-    if (this.#cancelHandlers.length > 0) {
-      try {
-        for (const handler of this.#cancelHandlers) {
-          handler();
-        }
-      } catch (error) {
-        this.#reject(error);
-        return;
-      }
-    }
-
     if (this.#rejectOnCancel) {
       this.#reject(new CancelError(reason));
+    }
+
+    if (this.#cancelHandlers.length > 0) {
+      for (const handler of this.#cancelHandlers) {
+        handler();
+      }
     }
   }
 
@@ -117,3 +120,17 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
     }
   }
 }
+
+export const BeCancelable = <T>(promiseOrAsync: PromiseLike<T> | (() => PromiseLike<T>), cancelHandler?: (() => void), shouldReject = true): CancelablePromise<T> => {
+  return new CancelablePromise<T>((resolve, reject, onCancel) => {
+    if (cancelHandler) {
+      onCancel.cancelHandler(cancelHandler);
+    }
+    onCancel.shouldReject = shouldReject;
+    if (TypeGuard.is<PromiseLike<T>>(promiseOrAsync)) {
+      promiseOrAsync.then(resolve, reject);
+    }else{
+      promiseOrAsync().then(resolve, reject);
+    }
+  });
+};

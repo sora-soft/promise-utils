@@ -1,5 +1,6 @@
-import {CancelablePromise, CancelError} from '../../src/CancelablePromise/index.js';
+import {BeCancelable, CancelablePromise, CancelError} from '../../src/CancelablePromise/index.js';
 import * as ava from 'ava';
+import delay from 'delay';
 const test = ava.default;
 
 test('CancelablePromise resolve as promise', async (t) => {
@@ -48,6 +49,19 @@ test('CancelablePromise finally as promise with reject', async (t) => {
   }), {instanceOf: Error, message: reason});
 });
 
+test('CancelablePromise finally as promise with reject and delay', async (t) => {
+  t.plan(2);
+  const reason = 'finally as promise with reject';
+  const cancelablePromise = new CancelablePromise(async (resolve, reject) => {
+    await delay(100);
+    reject(new Error(reason));
+  });
+
+  await t.throwsAsync(cancelablePromise.finally(() => {
+    t.pass();
+  }), {instanceOf: Error, message: reason});
+});
+
 test('CancelablePromise catch as promise', async (t) => {
   const reason = 'catch as promise';
   new CancelablePromise((resolve, reject) => {
@@ -70,7 +84,7 @@ test('CancelablePromise with timeout', async (t) => {
 test('CancelablePromise with cancel', async (t) => {
   t.plan(3);
   const result = 'test';
-  const reson = 'with cancel';
+  const reason = 'with cancel';
   const cancelablePromise = new CancelablePromise((resolve, reject, onCancel) => {
     onCancel.cancelHandler(() => {
       t.pass();
@@ -80,11 +94,11 @@ test('CancelablePromise with cancel', async (t) => {
     }, 100);
   });
   setTimeout(() => {
-    cancelablePromise.cancel(reson);
+    cancelablePromise.cancel(reason);
   }, 10);
   await t.throwsAsync(cancelablePromise.then(() => {
     t.fail();
-  }), {instanceOf: CancelError, message: reson});
+  }), {instanceOf: CancelError, message: reason});
   t.is(cancelablePromise.isCanceled, true);
 });
 
@@ -106,5 +120,106 @@ test('CancelablePromise with cancel and not should reject', async (t) => {
   await t.notThrowsAsync(cancelablePromise.then(() => {
     t.pass();
   }));
+  t.is(cancelablePromise.isCanceled, true);
+});
+
+test('CancelablePromise with cancel and onCancel throw Error', async (t) => {
+  t.plan(4);
+  const result = 'test';
+  const reason = 'with cancel and onCancel throw Error';
+  const cancelablePromise = new CancelablePromise((resolve, reject, onCancel) => {
+    onCancel.cancelHandler(() => {
+      t.pass();
+    });
+    onCancel.cancelHandler(() => {
+      throw new Error(reason);
+    });
+    setTimeout(() => {
+      resolve(result);
+    }, 100);
+  });
+  setTimeout(() => {
+    t.throws(() => { cancelablePromise.cancel(); }, {instanceOf: Error, message: reason});
+  }, 10);
+  await t.throwsAsync(cancelablePromise.then(() => {
+    t.fail();
+  }), {instanceOf: CancelError, message: 'Promise was canceled'});
+  t.is(cancelablePromise.isCanceled, true);
+});
+
+test('BeCancelable resolve as promise', async (t) => {
+  const result = 'test';
+  t.is(await BeCancelable(new Promise((resolve) => {
+    resolve(result);
+  })), result);
+});
+
+test('BeCancelable use async', async (t) => {
+  const result = 'test';
+  t.is(await BeCancelable((async () => {
+    await delay(50);
+    return result;
+  })), result);
+});
+
+test('BeCancelable with cancel', async (t) => {
+  t.plan(3);
+  const result = 'test';
+  const reason = 'with cancel';
+  const cancelablePromise = BeCancelable(new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(result);
+    }, 100);
+  }), () => {
+    t.pass();
+  });
+  setTimeout(() => {
+    cancelablePromise.cancel(reason);
+  }, 10);
+  await t.throwsAsync(cancelablePromise.then(() => {
+    t.fail();
+  }), {instanceOf: CancelError, message: reason});
+  t.is(cancelablePromise.isCanceled, true);
+});
+
+test('BeCancelable with cancel and not should reject', async (t) => {
+  t.plan(4);
+  const result = 'test';
+  const cancelablePromise = BeCancelable(new Promise((resolve,) => {
+    setTimeout(() => {
+      resolve(result);
+    }, 100);
+  }), () => {
+    t.pass();
+  }, false);
+  setTimeout(() => {
+    cancelablePromise.cancel();
+  }, 10);
+  await t.notThrowsAsync(cancelablePromise.then(() => {
+    t.pass();
+  }));
+  t.is(cancelablePromise.isCanceled, true);
+});
+
+test('BeCancelable with cancel and onCancel throw Error', async (t) => {
+  t.plan(4);
+  const result = 'test';
+  const reason = 'with cancel and onCancel throw Error';
+  const cancelablePromise = BeCancelable(new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(result);
+    }, 100);
+  }), () => {
+    t.pass();
+  });
+  cancelablePromise.addCancelHandler(() => {
+    throw new Error(reason);
+  });
+  setTimeout(() => {
+    t.throws(() => { cancelablePromise.cancel(); }, {instanceOf: Error, message: reason});
+  }, 10);
+  await t.throwsAsync(cancelablePromise.then(() => {
+    t.fail();
+  }), {instanceOf: CancelError, message: 'Promise was canceled'});
   t.is(cancelablePromise.isCanceled, true);
 });

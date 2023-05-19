@@ -1,0 +1,15 @@
+{
+    "eslint.enable": true,
+    "eslint.run": "onType",
+    "eslint.options": {
+      "extensions": [
+        ".js",
+        ".ts"
+      ]
+    },
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true,
+    },
+    "typescript.tsdk": "node_modules\\typescript\\lib",
+  }
+  
