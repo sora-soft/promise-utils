@@ -1,0 +1,57 @@
+{
+  "name": "@sora-soft/promise-utils",
+  "version": "1.0.0",
+  "description": "promise utils",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rimraf ./dist && ttsc",
+    "test": "rimraf ./dist && ttsc && ava",
+    "prepublishOnly": "rimraf ./dist && ttsc",
+    "prepare": "husky install",
+    "preversion": "lint-staged && npm run build",
+    "preCommit": "lint-staged && rimraf ./dist && ttsc && ava"
+  },
+  "repository": "git@github.com:sora-soft/promise-utils.git",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "keywords": [
+    "sora",
+    "promise"
+  ],
+  "author": "HD",
+  "license": "WTFPL",
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged && rimraf ./dist && ttsc && ava"
+    }
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.27",
+    "@typescript-eslint/eslint-plugin": "^5.54.0",
+    "@typescript-eslint/parser": "^5.54.0",
+    "ava": "^5.2.0",
+    "eslint": "^8.35.0",
+    "eslint-plugin-file-extension-in-import-ts": "^1.0.1",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-jsdoc": "^40.0.1",
+    "eslint-plugin-prefer-arrow": "^1.2.3",
+    "eslint-plugin-unused-imports": "^2.0.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.1.2",
+    "rimraf": "^3.0.2",
+    "ts-node": "^9.1.1",
+    "ttypescript": "^1.5.15",
+    "typescript": "^4.9.0"
+  },
+  "dependencies": {
+    "@sora-soft/type-guard": "^1.1.1"
+  }
+}
