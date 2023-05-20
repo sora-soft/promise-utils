@@ -43,7 +43,6 @@ test('CancelablePromise finally as promise with reject', async (t) => {
       reject(new Error(reason));
     }, 100);
   });
-
   await t.throwsAsync(cancelablePromise.finally(() => {
     t.pass();
   }), {instanceOf: Error, message: reason});
@@ -51,12 +50,11 @@ test('CancelablePromise finally as promise with reject', async (t) => {
 
 test('CancelablePromise finally as promise with reject and delay', async (t) => {
   t.plan(2);
-  const reason = 'finally as promise with reject';
+  const reason = 'finally as promise with reject and delay';
   const cancelablePromise = new CancelablePromise(async (resolve, reject) => {
     await delay(100);
     reject(new Error(reason));
   });
-
   await t.throwsAsync(cancelablePromise.finally(() => {
     t.pass();
   }), {instanceOf: Error, message: reason});
