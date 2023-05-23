@@ -1,4 +1,4 @@
-import {BeAbleToAbort, PromiseWithAbortSignal} from '../../src/index.js';
+import {BeAbleToAbort, PromiseWithAbortSignal} from '../index.js';
 import * as ava from 'ava';
 import delay from 'delay';
 const test = ava.default;

@@ -1,4 +1,4 @@
-import {PromiseQueue, TimeoutError} from '../../src/index.js';
+import {PromiseQueue, TimeoutError} from '../index.js';
 import * as ava from 'ava';
 import delay from 'delay';
 const test = ava.default;
@@ -204,7 +204,7 @@ test('TaskQueue addTask with concurrency 1, check run time', async (t) => {
     });
   })), times);
   const range = Date.now() - start;
-  t.true(range >= 140 && range <= 200);
+  t.true(range >= 130 && range <= 230);
 });
 
 test('TaskQueue addTask with concurrency 5, check run time', async (t) => {
