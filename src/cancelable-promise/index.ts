@@ -1,4 +1,5 @@
 import {TypeGuard} from '@sora-soft/type-guard';
+import {AsyncFunction} from '../Types.js';
 export class CancelError extends Error {
   readonly name = 'CancelError' as const;
 
@@ -24,31 +25,6 @@ const enum CancelablePromiseState {
   REJECTED = 'rejected',
 }
 
-/**
- * @class CancelablePromise
- * @description
- * A promise that can be canceled.
- * @example
- * const promise = new CancelablePromise((resolve, reject, onCancel) => {
- *  onCancel.cancelHandler(() => {
- *   // Do something when the promise is canceled
- *  });
- *  setTimeout(() => {
- *    resolve('Hello world!');
- *  }, 1000);
- * });
- * promise.catch((error) => {
- *  console.error(error); // CancelError: Promise was canceled
- * });
- * promise.cancel();
- * @template ReturnType
- * @param {PromiseExecutor<ReturnType>} executor
- * @returns {CancelablePromise<ReturnType>}
- * @constructor
- * @public
- * @since 1.0.0
- * @version 1.0.0
- */
 export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
   #cancelHandlers: (() => void)[] = [];
   #rejectOnCancel = true;
@@ -56,6 +32,31 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
   #promise: Promise<ReturnType>;
   #reject!: (reason?: any) => void;
 
+  /**
+   * @class CancelablePromise
+   * @description
+   * A promise that can be canceled.
+   * @example
+   * const promise = new CancelablePromise((resolve, reject, onCancel) => {
+   *  onCancel.cancelHandler(() => {
+   *   // Do something when the promise is canceled
+   *  });
+   *  setTimeout(() => {
+   *    resolve('Hello world!');
+   *  }, 1000);
+   * });
+   * promise.catch((error) => {
+   *  console.error(error); // CancelError: Promise was canceled
+   * });
+   * promise.cancel();
+   * @template ReturnType
+   * @param {PromiseExecutor<ReturnType>} executor
+   * @returns {CancelablePromise<ReturnType>}
+   * @constructor
+   * @public
+   * @since 1.0.0
+   * @version 1.0.0
+   */
   constructor(executor: (
     resolve: (value: ReturnType | PromiseLike<ReturnType>) => void,
     reject: (reason?: any) => void,
@@ -182,7 +183,7 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
  * });
  * promise.cancel();
  * @template ReturnType
- * @param {PromiseLike<ReturnType> | (() => PromiseLike<ReturnType>)} promiseOrAsync
+ * @param {PromiseLike<ReturnType> | AsyncFunction<ReturnType>} promiseOrAsync
  * @param {(() => void)} [cancelHandler]
  * @param {boolean} [shouldReject=true]
  * @returns {CancelablePromise<ReturnType>}
@@ -190,7 +191,7 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
  * @since 1.0.0
  * @version 1.0.0
  */
-export const BeCancelable = <T>(promiseOrAsync: PromiseLike<T> | (() => PromiseLike<T>), cancelHandler?: (() => void), shouldReject = true): CancelablePromise<T> => {
+export const BeCancelable = <T>(promiseOrAsync: PromiseLike<T> | AsyncFunction<T>, cancelHandler?: (() => void), shouldReject = true): CancelablePromise<T> => {
   return new CancelablePromise<T>((resolve, reject, onCancel) => {
     if (cancelHandler) {
       onCancel.cancelHandler(cancelHandler);

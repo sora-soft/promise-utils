@@ -1,6 +1,6 @@
+import {BeAbleToAbort, PromiseWithAbortSignal} from '../../src/index.js';
 import * as ava from 'ava';
 import delay from 'delay';
-import {PromiseWithAbortSignal, BeAbleToAbort} from '../../src/PromiseWithAbortSignal/index.js';
 const test = ava.default;
 
 test('PromiseWithAbortSignal resolve as promise', async (t) => {

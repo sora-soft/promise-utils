@@ -1,5 +1,5 @@
 import {TypeGuard} from '@sora-soft/type-guard';
-import {PromiseExecutor} from '../Types.js';
+import {AsyncFunction, PromiseExecutor} from '../Types.js';
 
 /**
  * @typedef {Object} PromiseWithAbortSignalOptions
@@ -9,39 +9,39 @@ export type PromiseWithAbortSignalOptions = {
   signal: globalThis.AbortSignal;
 };
 
-/**
- * @class PromiseWithAbortSignal
- * @description
- * A promise that can be aborted.
- * @example
- * const controller = new AbortController();
- * const promise = new PromiseWithAbortSignal((resolve, reject) => {
- *  controller.signal.addEventListener('abort', () => {
- *    // Do something when the promise is aborted
- *  });
- *  setTimeout(() => {
- *    resolve('Hello world!');
- *  }, 1000);
- * }, {
- *  signal: controller.signal,
- * });
- * promise.catch((error) => {
- *  console.error(error); // CancelError: This operation was aborted
- * });
- * controller.abort();
- * @template ReturnType
- * @param {PromiseExecutor<ReturnType>} executor
- * @param {PromiseWithAbortSignalOptions} options
- * @returns {PromiseWithAbortSignal<ReturnType>}
- * @constructor
- * @public
- * @since 1.0.0
- * @version 1.0.0
- */
 export class PromiseWithAbortSignal<ReturnType> implements PromiseLike<ReturnType> {
   #promise: Promise<ReturnType>;
   #signal: AbortSignal;
 
+  /**
+   * @class PromiseWithAbortSignal
+   * @description
+   * A promise that can be aborted.
+   * @example
+   * const controller = new AbortController();
+   * const promise = new PromiseWithAbortSignal((resolve, reject) => {
+   *  controller.signal.addEventListener('abort', () => {
+   *    // Do something when the promise is aborted
+   *  });
+   *  setTimeout(() => {
+   *    resolve('Hello world!');
+   *  }, 1000);
+   * }, {
+   *  signal: controller.signal,
+   * });
+   * promise.catch((error) => {
+   *  console.error(error); // CancelError: This operation was aborted
+   * });
+   * controller.abort();
+   * @template ReturnType
+   * @param {PromiseExecutor<ReturnType>} executor
+   * @param {PromiseWithAbortSignalOptions} options
+   * @returns {PromiseWithAbortSignal<ReturnType>}
+   * @constructor
+   * @public
+   * @since 1.0.0
+   * @version 1.0.0
+   */
   constructor(executor: PromiseExecutor<ReturnType>, options: PromiseWithAbortSignalOptions) {
     this.#signal = options.signal;
     this.#promise = new Promise((resolve, reject) => {
@@ -114,7 +114,7 @@ export class PromiseWithAbortSignal<ReturnType> implements PromiseLike<ReturnTyp
  * });
  * controller.abort();
  * @template ReturnType
- * @param {PromiseLike<ReturnType> | (() => PromiseLike<ReturnType>)} promiseOrAsync
+ * @param {PromiseLike<ReturnType> | AsyncFunction<ReturnType>} promiseOrAsync
  * @param {PromiseWithAbortSignalOptions} options
  * @returns {PromiseWithAbortSignal<ReturnType>}
  * @constructor
@@ -122,7 +122,7 @@ export class PromiseWithAbortSignal<ReturnType> implements PromiseLike<ReturnTyp
  * @since 1.0.0
  * @version 1.0.0
  */
-export const BeAbleToAbort = <ReturnType>(promiseOrAsync: PromiseLike<ReturnType> | (() => PromiseLike<ReturnType>), options: PromiseWithAbortSignalOptions) => {
+export const BeAbleToAbort = <ReturnType>(promiseOrAsync: PromiseLike<ReturnType> | AsyncFunction<ReturnType>, options: PromiseWithAbortSignalOptions) => {
   return new PromiseWithAbortSignal<ReturnType>((resolve, reject) => {
     if (TypeGuard.is<PromiseLike<ReturnType>>(promiseOrAsync)) {
       promiseOrAsync.then(resolve, reject);

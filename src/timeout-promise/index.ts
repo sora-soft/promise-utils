@@ -1,5 +1,5 @@
 import {TypeGuard} from '@sora-soft/type-guard';
-import {PromiseExecutor} from '../Types.js';
+import {AsyncFunction, PromiseExecutor} from '../Types.js';
 
 export class TimeoutError extends Error {
   readonly name = 'TimeoutError' as const;
@@ -22,39 +22,39 @@ export type TimeoutPromiseOptions<ReturnType> = {
   fallback?: () => ReturnType | PromiseLike<ReturnType>;
 };
 
-/**
- * @class TimeoutPromise
- * @description
- * A promise that can be timed out.
- * @example
- * const promise = new TimeoutPromise((resolve, reject) => {
- *  setTimeout(() => {
- *    resolve('Hello world!');
- *  }, 1000);
- * }, {
- *  milliseconds: 500,
- *  message: 'Promise timed out',
- *  fallback: () => {
- *    return 'Fallback value';
- *  },
- * });
- * promise.catch((error) => {
- *  console.error(error); // TimeoutError: Promise timeout
- * });
- * @template ReturnType
- * @param {PromiseExecutor<ReturnType>} executor
- * @param {TimeoutPromiseOptions<ReturnType>} options
- * @returns {TimeoutPromise<ReturnType>}
- * @constructor
- * @public
- * @since 1.0.0
- * @version 1.0.0
- */
 export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
   #promise: Promise<ReturnType>;
   #abortController: AbortController;
   #timeoutId?: NodeJS.Timeout;
 
+  /**
+   * @class TimeoutPromise
+   * @description
+   * A promise that can be timed out.
+   * @example
+   * const promise = new TimeoutPromise((resolve, reject) => {
+   *  setTimeout(() => {
+   *    resolve('Hello world!');
+   *  }, 1000);
+   * }, {
+   *  milliseconds: 500,
+   *  message: 'Promise timed out',
+   *  fallback: () => {
+   *    return 'Fallback value';
+   *  },
+   * });
+   * promise.catch((error) => {
+   *  console.error(error); // TimeoutError: Promise timeout
+   * });
+   * @template ReturnType
+   * @param {PromiseExecutor<ReturnType>} executor
+   * @param {TimeoutPromiseOptions<ReturnType>} options
+   * @returns {TimeoutPromise<ReturnType>}
+   * @constructor
+   * @public
+   * @since 1.0.0
+   * @version 1.0.0
+   */
   constructor(executor: PromiseExecutor<ReturnType>, options: TimeoutPromiseOptions<ReturnType>) {
     const {
       milliseconds,
@@ -141,7 +141,7 @@ export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
  *  console.error(error); // TimeoutError: Promise timeout
  * });
  * @template ReturnType
- * @param {PromiseLike<ReturnType> | (() => PromiseLike<ReturnType>)} promiseOrAsync
+ * @param {PromiseLike<ReturnType> | AsyncFunction<ReturnType>} promiseOrAsync
  * @param {TimeoutPromiseOptions<ReturnType>} options
  * @returns {TimeoutPromise<ReturnType>}
  * @constructor
@@ -149,7 +149,7 @@ export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
  * @since 1.0.0
  * @version 1.0.0
  */
-export const BeAbleToTimeout = <ReturnType>(promiseOrAsync: PromiseLike<ReturnType> | (() => PromiseLike<ReturnType>), options: TimeoutPromiseOptions<ReturnType>) => {
+export const BeAbleToTimeout = <ReturnType>(promiseOrAsync: PromiseLike<ReturnType> | AsyncFunction<ReturnType>, options: TimeoutPromiseOptions<ReturnType>) => {
   return new TimeoutPromise<ReturnType>((resolve, reject) => {
     if (TypeGuard.is<PromiseLike<ReturnType>>(promiseOrAsync)) {
       promiseOrAsync.then(resolve, reject);

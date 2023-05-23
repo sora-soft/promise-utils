@@ -1,5 +1,5 @@
+import {BeAbleToTimeout, TimeoutError, TimeoutPromise} from '../../src/index.js';
 import * as ava from 'ava';
-import {BeAbleToTimeout, TimeoutError, TimeoutPromise} from '../../src/TimeoutPromise/index.js';
 import delay from 'delay';
 const test = ava.default;
 
@@ -216,7 +216,7 @@ test('BeAbleToTimeout routine use', async (t) => {
   const result = 'test';
   const result2 = 'test2';
   const now = Date.now();
-  const res = await BeAbleToTimeout(async()=>{
+  const res = await BeAbleToTimeout(async () => {
     await delay(500);
     return result;
   }, {

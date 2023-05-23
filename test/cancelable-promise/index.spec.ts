@@ -1,4 +1,4 @@
-import {BeCancelable, CancelablePromise, CancelError} from '../../src/CancelablePromise/index.js';
+import {BeCancelable, CancelError, CancelablePromise} from '../../src/index.js';
 import * as ava from 'ava';
 import delay from 'delay';
 const test = ava.default;

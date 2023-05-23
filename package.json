@@ -53,7 +53,8 @@
   },
   "dependencies": {
     "@sora-soft/type-guard": "^1.1.1",
-    "delay": "^5.0.0"
+    "delay": "^5.0.0",
+    "eventemitter3": "^5.0.1"
   },
   "simple-git-hooks": {
     "pre-commit": "npm run preCommit",
