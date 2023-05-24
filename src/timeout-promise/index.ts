@@ -60,14 +60,19 @@ export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
       milliseconds,
       message,
     } = options;
-    if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
-      throw new TypeError(`Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``);
-    }
     this.#abortController = new AbortController();
+    if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
+      this.#abortController.abort(new TypeError(`milliseconds error: ${milliseconds}`));
+    }
     this.#promise = new Promise((resolve, reject) => {
       const abort = () => {
         reject(this.#abortController.signal.reason);
       };
+      if (this.#abortController.signal.aborted) {
+        abort();
+        return;
+      }
+
       const abortAndFinalize = () => {
         abort();
         finalize();

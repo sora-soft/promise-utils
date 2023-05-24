@@ -14,6 +14,15 @@ test('TimeoutPromise resolve as promise', async (t) => {
   });
 });
 
+test('TimeoutPromise milliseconds error', async (t) => {
+  const result = 'test';
+  await t.throwsAsync(new TimeoutPromise((resolve, reject) => {
+    setTimeout(() => {
+      resolve(result);
+    }, 50);
+  }, {milliseconds: -1}), {instanceOf: TypeError, message: 'milliseconds error: -1'});
+});
+
 test('TimeoutPromise finally as promise', async (t) => {
   const result = 'test';
   await new TimeoutPromise((resolve, reject) => {

@@ -106,7 +106,7 @@ export class PromiseQueue extends EventEmitter<EventName> {
       ...options,
     } as QueueOptions;
 
-    this.concurrency = (!options.concurrency || options.concurrency < 0) ? Number.POSITIVE_INFINITY : options.concurrency;
+    this.concurrency = (!options.concurrency || options.concurrency <= 0) ? Number.POSITIVE_INFINITY : Math.ceil(options.concurrency);
     this.timeout = options.timeout;
     this.#isPaused = options.autoStart === false;
   }
