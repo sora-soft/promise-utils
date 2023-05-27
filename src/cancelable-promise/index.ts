@@ -1,5 +1,6 @@
 import {TypeGuard} from '@sora-soft/type-guard';
 import {AsyncFunction} from '../Types.js';
+
 export class CancelError extends Error {
   readonly name = 'CancelError' as const;
 
@@ -8,20 +9,54 @@ export class CancelError extends Error {
   }
 }
 
-// If the user cancels the operation, the handler will be invoked. If the
-// operation is cancelled, the promise will be rejected if `shouldReject` is
-// true, otherwise it will be resolved. The caller should catch any error
-// thrown by the handler.
-interface OnCancelFunction {
+/**
+ * @typedef {Object} OnCancel
+ * @description
+ * For canceling a promise.
+ */
+interface OnCancel {
+  /**
+   * @description
+   * The function to call when the promise is canceled.
+   * @type {Function}
+   * @param {Function} handler
+   * @returns {void}
+   */
   cancelHandler: (handler: () => void) => void;
+  /**
+   * @description
+   * The promise will be rejected if `shouldReject` is true, otherwise it will
+   * be resolved.
+   * @type {boolean}
+   */
   shouldReject: boolean;
 }
 
-// This code defines the CancelablePromiseState enum.
+/**
+ * @typedef {Object} CancelablePromiseState
+ * @description
+ * The state of the cancelable promise.
+ */
 const enum CancelablePromiseState {
+  /**
+   * @description
+   * The promise is pending.
+   */
   PENDING = 'pending',
+  /**
+   * @description
+   * The promise is canceled.
+   */
   CANCELED = 'canceled',
+  /**
+   * @description
+   * The promise is resolved.
+   */
   RESOLVED = 'resolved',
+  /**
+   * @description
+   * The promise is rejected.
+   */
   REJECTED = 'rejected',
 }
 
@@ -50,7 +85,7 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
    * });
    * promise.cancel();
    * @template ReturnType
-   * @param {PromiseExecutor<ReturnType>} executor
+   * @param {(resolve: (value: ReturnType | PromiseLike<ReturnType>) => void,reject: (reason?: any) => void,onCancel: OnCancel) => void} executor
    * @returns {CancelablePromise<ReturnType>}
    * @constructor
    * @public
@@ -60,7 +95,7 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
   constructor(executor: (
     resolve: (value: ReturnType | PromiseLike<ReturnType>) => void,
     reject: (reason?: any) => void,
-    onCancel: OnCancelFunction
+    onCancel: OnCancel
   ) => void) {
     this.#promise = new Promise((resolve, reject) => {
       this.#reject = reject;
@@ -79,7 +114,7 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
         }
       };
 
-      const onCancel: OnCancelFunction = {
+      const onCancel: OnCancel = {
         cancelHandler: (handler) => {
           if (this.#state !== CancelablePromiseState.PENDING) {
             throw new Error(`The \`onCancel\` handler was attached after the promise ${this.#state}.`);
@@ -115,9 +150,15 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
     return this.#promise.finally(onfinally);
   }
 
-  // The addCancelHandler method adds a cancel handler to the cancel handlers list.
-  // It throws an error if the promise has already been resolved or rejected.
-  // The cancel handlers list is executed when the promise is canceled.
+  /**
+   * @description
+   * The addCancelHandler method adds a cancel handler to the cancel handlers list.
+   * It throws an error if the promise has already been resolved or rejected.
+   * The cancel handlers list is executed when the promise is canceled.
+   *
+   * @param {Function} handler - The cancel handler to add.
+   * @returns {void}
+   */
   addCancelHandler(handler: () => void) {
     if (this.#state !== CancelablePromiseState.PENDING) {
       throw new Error(`The \`addCancelHandler\` method was called after the promise ${this.#state}.`);
@@ -126,9 +167,11 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
   }
 
   /**
+   * @description
    * Cancel the promise.
    *
    * @param {string} [reason] - An optional reason for canceling.
+   * @returns {void}
    */
   cancel(reason?: string) {
     // If the promise is already completed, do nothing.
@@ -153,7 +196,9 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
   }
 
   /**
+   * @description
    * Returns true if the promise is canceled, false otherwise.
+   * @returns {boolean}
    */
   get isCanceled() {
     return this.#state === CancelablePromiseState.CANCELED;

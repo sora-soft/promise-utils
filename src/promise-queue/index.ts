@@ -2,46 +2,70 @@ import {EventEmitter} from 'eventemitter3';
 import {BeAbleToAbort, BeAbleToTimeout} from '../index.js';
 import {AsyncFunction} from '../Types.js';
 
+/**
+ * @typedef {Object} PriorityOptions
+ * @description
+ * The options for priority.
+ */
 export interface PriorityOptions {
   /**
+   * @description
    * The lower the number, the sooner the promise will be run.
+   * @type {number}
    */
   priority?: number;
 }
 
+/**
+ * @typedef {Object} PromiseOptions
+ * @description
+ * The options for promise.
+ */
 export interface PromiseOptions extends PriorityOptions {
   /**
+   * @description
    * make promise can be aborted.
-   *
    * @class PromiseWithAbortSignal
    */
-  readonly signal?: AbortSignal;
+  signal?: AbortSignal;
 }
 
+/**
+ * @typedef {Object} QueueOptions
+ * @description
+ * The options for queue.
+ */
 export interface QueueOptions {
   /**
+   * @description
    * The max number of concurrently pending promises.
-   *
-  @default Infinity
+   * @type {number}
+   * @default Number.POSITIVE_INFINITY
    */
-  readonly concurrency?: number;
+  concurrency?: number;
 
   /**
+   * @description
    * auto start queue.
-   *
-  @default true
+   * @type {boolean}
+   * @default true
    */
-  readonly autoStart?: boolean;
+  autoStart?: boolean;
 
   /**
+   * @description
    * make promise can be timeout.
-   *
-   * @class TimeoutPromise
+   * @type {number}
    */
   timeout?: number;
 }
 
-export const lowerBound = <T>(array: readonly T[], value: T, comparator: (a: T, b: T) => number): number => {
+const getDefaultQueueOptions = (): QueueOptions => ({
+  concurrency: Number.POSITIVE_INFINITY,
+  autoStart: true,
+});
+
+const lowerBound = <T>(array: readonly T[], value: T, comparator: (a: T, b: T) => number): number => {
   let first = 0;
   let count = array.length;
 
@@ -91,6 +115,7 @@ export class PromiseQueue extends EventEmitter<EventName> {
    * })
    * @template ReturnType
    * @param {QueueOptions} options
+   * @throws {TypeError}
    * @returns {PromiseQueue<ReturnType>}
    * @constructor
    * @public
@@ -101,12 +126,13 @@ export class PromiseQueue extends EventEmitter<EventName> {
     super();
 
     options = {
-      concurrency: Number.POSITIVE_INFINITY,
-      autoStart: true,
+      ...getDefaultQueueOptions(),
       ...options,
-    } as QueueOptions;
-
-    this.concurrency = (!options.concurrency || options.concurrency <= 0) ? Number.POSITIVE_INFINITY : Math.ceil(options.concurrency);
+    };
+    if (!options.concurrency || !Number.isInteger(options.concurrency) || options.concurrency < 0) {
+      throw new TypeError('The concurrency must be a positive integer.');
+    }
+    this.concurrency = Math.ceil(options.concurrency);
     this.timeout = options.timeout;
     this.#isPaused = options.autoStart === false;
   }
@@ -143,14 +169,12 @@ export class PromiseQueue extends EventEmitter<EventName> {
     return this.#pending < this.#concurrency;
   }
 
-  // 完成了一个任务
   #next(): void {
     this.#pending--;
     this.#tryToStartAnother();
     this.emit('next');
   }
 
-  // 实际尝试运行下一个任务
   #tryToStartAnother(): boolean {
     if (this.#queue.length === 0) {
 
@@ -185,12 +209,21 @@ export class PromiseQueue extends EventEmitter<EventName> {
   }
 
   /**
+   * @description
    * The max number of concurrently pending promises.
+   * @returns {number}
    */
   get concurrency(): number {
     return this.#concurrency;
   }
 
+  /**
+   * @description
+   * Set the max number of concurrently pending promises.
+   * @param {number} newConcurrency
+   * @throws {TypeError}
+   * @returns {void}
+   */
   set concurrency(newConcurrency: number) {
     if (!(typeof newConcurrency === 'number' && newConcurrency >= 1)) {
       throw new TypeError(`concurrency error: ${newConcurrency}`);
@@ -202,7 +235,12 @@ export class PromiseQueue extends EventEmitter<EventName> {
   }
 
   /**
+   * @description
    * add promise to queue.
+   * @param {PromiseLike<ReturnType> | AsyncFunction<ReturnType>} function_
+   * @param {Partial<PromiseOptions>} options
+   * @template ReturnType
+   * @returns {Promise<ReturnType>}
    */
   async add<ReturnType>(function_: PromiseLike<ReturnType> | AsyncFunction<ReturnType>, options?: Partial<PromiseOptions>): Promise<ReturnType>;
   async add<ReturnType>(function_: PromiseLike<ReturnType> | AsyncFunction<ReturnType>, options: Partial<PromiseOptions> = {}): Promise<ReturnType> {
@@ -239,7 +277,12 @@ export class PromiseQueue extends EventEmitter<EventName> {
   }
 
   /**
+   * @description
    * add promise to queue.
+   * @param {ReadonlyArray<PromiseLike<ReturnType> | AsyncFunction<ReturnType>>} functions
+   * @param {Partial<PromiseOptions>} options
+   * @template ReturnType
+   * @returns {Promise<Array<ReturnType>>}
    */
   async addAll<ReturnType>(
     functions: ReadonlyArray<PromiseLike<ReturnType> | AsyncFunction<ReturnType>>,
@@ -253,7 +296,9 @@ export class PromiseQueue extends EventEmitter<EventName> {
   }
 
   /**
+   * @description
    * start if queue is paused.
+   * @returns {this}
    */
   start(): this {
     if (!this.#isPaused) {
@@ -267,21 +312,27 @@ export class PromiseQueue extends EventEmitter<EventName> {
   }
 
   /**
+   * @description
    * pause if queue is running.
+   * @returns {void}
    */
   pause(): void {
     this.#isPaused = true;
   }
 
   /**
+   * @description
    * clear queue.
+   * @returns {void}
    */
   clear(): void {
     this.#queue = [];
   }
 
   /**
+   * @description
    * return when queue is empty.
+   * @returns {Promise<void>}
    */
   async onEmpty(): Promise<void> {
     if (this.#queue.length === 0) {
@@ -292,7 +343,10 @@ export class PromiseQueue extends EventEmitter<EventName> {
   }
 
   /**
+   * @description
    * return when queue size less than limit.
+   * @param limit
+   * @returns {Promise<void>}
    */
   async onSizeLessThan(limit: number): Promise<void> {
     if (this.#queue.length < limit) {
@@ -303,7 +357,9 @@ export class PromiseQueue extends EventEmitter<EventName> {
   }
 
   /**
+   * @description
    * return when queue is empty and pending is 0.
+   * @returns {Promise<void>}
    */
   async onIdle(): Promise<void> {
     if (this.#pending === 0 && this.#queue.length === 0) {
@@ -329,21 +385,27 @@ export class PromiseQueue extends EventEmitter<EventName> {
   }
 
   /**
+   * @description
    * return queue size.
+   * @returns {number}
    */
   get size(): number {
     return this.#queue.length;
   }
 
   /**
+   * @description
    * return pending count.
+   * @returns {number}
    */
   get pending(): number {
     return this.#pending;
   }
 
   /**
+   * @description
    * return queue is paused.
+   * @returns {boolean}
    */
   get isPaused(): boolean {
     return this.#isPaused;

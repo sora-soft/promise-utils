@@ -3,11 +3,15 @@ import {AsyncFunction, PromiseExecutor} from '../Types.js';
 
 /**
  * @typedef {Object} PromiseWithAbortSignalOptions
- * @property {AbortSignal} signal
  */
-export type PromiseWithAbortSignalOptions = {
+export interface PromiseWithAbortSignalOptions  {
+  /**
+   * @description
+   * The signal to abort the promise.
+   * @type {AbortSignal}
+   */
   signal: globalThis.AbortSignal;
-};
+}
 
 export class PromiseWithAbortSignal<ReturnType> implements PromiseLike<ReturnType> {
   #promise: Promise<ReturnType>;
@@ -117,7 +121,6 @@ export class PromiseWithAbortSignal<ReturnType> implements PromiseLike<ReturnTyp
  * @param {PromiseLike<ReturnType> | AsyncFunction<ReturnType>} promiseOrAsync
  * @param {PromiseWithAbortSignalOptions} options
  * @returns {PromiseWithAbortSignal<ReturnType>}
- * @constructor
  * @public
  * @since 1.0.0
  * @version 1.0.0

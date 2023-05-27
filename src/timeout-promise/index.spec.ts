@@ -20,7 +20,7 @@ test('TimeoutPromise milliseconds error', async (t) => {
     setTimeout(() => {
       resolve(result);
     }, 50);
-  }, {milliseconds: -1}), {instanceOf: TypeError, message: 'milliseconds error: -1'});
+  }, {milliseconds: -1}), {instanceOf: TypeError, message: 'The milliseconds must be a positive integer.'});
 });
 
 test('TimeoutPromise finally as promise', async (t) => {

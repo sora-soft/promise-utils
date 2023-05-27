@@ -11,16 +11,28 @@ export class TimeoutError extends Error {
 
 /**
  * @typedef {Object} TimeoutPromiseOptions
- * @property {number} milliseconds
- * @property {string} [message]
- * @property {() => ReturnType | PromiseLike<ReturnType>} [fallback]
  * @template ReturnType
  */
-export type TimeoutPromiseOptions<ReturnType> = {
+export interface TimeoutPromiseOptions<ReturnType>  {
+  /**
+   * @description
+   * The timeout in milliseconds.
+   * @type {number}
+   */
   milliseconds: number;
+  /**
+   * @description
+   * The message to use for the error.
+   * @type {string}
+   */
   message?: string;
+  /**
+   * @description
+   * The fallback value to use if the promise times out.
+   * @type {ReturnType | PromiseLike<ReturnType> | (() => ReturnType | PromiseLike<ReturnType>)}
+   */
   fallback?: () => ReturnType | PromiseLike<ReturnType>;
-};
+}
 
 export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
   #promise: Promise<ReturnType>;
@@ -49,6 +61,7 @@ export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
    * @template ReturnType
    * @param {PromiseExecutor<ReturnType>} executor
    * @param {TimeoutPromiseOptions<ReturnType>} options
+   * @throws {TypeError}
    * @returns {TimeoutPromise<ReturnType>}
    * @constructor
    * @public
@@ -61,8 +74,8 @@ export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
       message,
     } = options;
     this.#abortController = new AbortController();
-    if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
-      this.#abortController.abort(new TypeError(`milliseconds error: ${milliseconds}`));
+    if (!milliseconds || !Number.isInteger(milliseconds) || milliseconds < 0) {
+      this.#abortController.abort(new TypeError('The milliseconds must be a positive integer.'));
     }
     this.#promise = new Promise((resolve, reject) => {
       const abort = () => {
@@ -116,7 +129,9 @@ export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
   }
 
   /**
+   * @description
    * Clear the timeout
+   * @returns {void}
    */
   clear(): void {
     clearTimeout(this.#timeoutId);
@@ -149,7 +164,6 @@ export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
  * @param {PromiseLike<ReturnType> | AsyncFunction<ReturnType>} promiseOrAsync
  * @param {TimeoutPromiseOptions<ReturnType>} options
  * @returns {TimeoutPromise<ReturnType>}
- * @constructor
  * @public
  * @since 1.0.0
  * @version 1.0.0
