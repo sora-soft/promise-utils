@@ -11,5 +11,5 @@
       "source.fixAll.eslint": true,
     },
     "typescript.tsdk": "node_modules\\typescript\\lib",
+    "files.eol": "\r\n"
   }
-  

@@ -1,16 +1,16 @@
 import delay from 'delay';
-import {RetryController, RetryError, RetryFunction} from '../index.js';
+import {RetryController, RetryError, RetryPromise} from '../index.js';
 import * as ava from 'ava';
 const test = ava.default;
 
-test('RetryFunction call', async (t) => {
+test('RetryPromise call', async (t) => {
   const result = 'test';
   let i = 0;
   const now = Date.now();
   const errors = Array(3).fill(1).map((v, index) => {
     return new Error(`test${index + 1}`);
   });
-  const func = RetryFunction((value) => {
+  const func = RetryPromise((value) => {
     if (errors[i]) {
       throw errors[i++];
     }
@@ -25,14 +25,14 @@ test('RetryFunction call', async (t) => {
   t.is(i, 3);
 });
 
-test('RetryFunction throw error', async (t) => {
+test('RetryPromise throw error', async (t) => {
   const result = 'test';
   let i = 0;
   let c = 0;
   const errors = Array(3).fill(1).map((v, index) => {
     return new Error(`test${index + 1}`);
   });
-  const func = RetryFunction(async (value) => {
+  const func = RetryPromise(async (value) => {
     if (errors[i]) {
       throw errors[i++];
     }
@@ -49,14 +49,14 @@ test('RetryFunction throw error', async (t) => {
   t.is(c, 1);
 });
 
-test('RetryFunction with abort', async (t) => {
+test('RetryPromise with abort', async (t) => {
   const result = 'test';
   const ac = new AbortController();
   let i = 0;
   const errors = Array(3).fill(1).map((v, index) => {
     return new Error(`test${index + 1}`);
   });
-  const func = RetryFunction(async (value) => {
+  const func = RetryPromise(async (value) => {
     if (i === 1) {
       ac.abort();
       return;
@@ -75,7 +75,7 @@ test('RetryFunction with abort', async (t) => {
   t.is(ac.signal.aborted, true);
 });
 
-test('RetryFunction with abort outside', async (t) => {
+test('RetryPromise with abort outside', async (t) => {
   const result = 'test';
   const ac = new AbortController();
   let i = 0;
@@ -83,7 +83,7 @@ test('RetryFunction with abort outside', async (t) => {
   const errors = Array(5).fill(1).map((v, index) => {
     return new Error(`test${index + 1}`);
   });
-  const func = RetryFunction(async (value) => {
+  const func = RetryPromise(async (value) => {
     if (errors[i]) {
       throw errors[i++];
     }
@@ -102,7 +102,7 @@ test('RetryFunction with abort outside', async (t) => {
   t.is(ac.signal.aborted, true);
 });
 
-test('RetryFunction multiple calls', async (t) => {
+test('RetryPromise multiple calls', async (t) => {
   const result = 'test';
   let i = 0;
   let c = 0;
@@ -110,7 +110,7 @@ test('RetryFunction multiple calls', async (t) => {
   const errors = Array(3).fill(1).map((v, index) => {
     return new Error(`test${index + 1}`);
   });
-  const func = RetryFunction((value) => {
+  const func = RetryPromise((value) => {
     if (errors[i]) {
       throw errors[i++];
     }
@@ -128,14 +128,14 @@ test('RetryFunction multiple calls', async (t) => {
   t.true(Date.now() - now >= 1000 + 2000 + 4000);
 });
 
-test('RetryFunction time interval', async (t) => {
+test('RetryPromise time interval', async (t) => {
   const result = 'test';
   let i = 0;
   const now = Date.now();
   const errors = Array(5).fill(1).map((v, index) => {
     return new Error(`test${index + 1}`);
   });
-  const func = RetryFunction((value) => {
+  const func = RetryPromise((value) => {
     if (errors[i]) {
       throw errors[i++];
     }
@@ -148,7 +148,7 @@ test('RetryFunction time interval', async (t) => {
   t.true(Date.now() - now >= 500 && Date.now() - now < 600);
 });
 
-test('RetryFunction time interval max and randomize', async (t) => {
+test('RetryPromise time interval max and randomize', async (t) => {
   const result = 'test';
   let i = 0;
   const now = Date.now();
@@ -156,7 +156,7 @@ test('RetryFunction time interval max and randomize', async (t) => {
   const errors = Array(5).fill(1).map((v, index) => {
     return new Error(`test${index + 1}`);
   });
-  const func = RetryFunction((value) => {
+  const func = RetryPromise((value) => {
     if (errors[i]) {
       throw errors[i++];
     }
@@ -177,14 +177,14 @@ test('RetryFunction time interval max and randomize', async (t) => {
   t.true(Date.now() - now >= time && Date.now() - now < time + 100);
 });
 
-test('RetryFunction with getTimeout', async (t) => {
+test('RetryPromise with getTimeout', async (t) => {
   const result = 'test';
   let i = 0;
   const now = Date.now();
   const errors = Array(5).fill(1).map((v, index) => {
     return new Error(`test${index + 1}`);
   });
-  const func = RetryFunction((value) => {
+  const func = RetryPromise((value) => {
     if (errors[i]) {
       throw errors[i++];
     }
@@ -203,14 +203,14 @@ test('RetryFunction with getTimeout', async (t) => {
   t.true(Date.now() - now >= 500 && Date.now() - now < 600);
 });
 
-test('RetryFunction with maxRetryTime', async (t) => {
+test('RetryPromise with maxRetryTime', async (t) => {
   const result = 'test';
   let i = 0;
   const now = Date.now();
   const errors = Array(5).fill(1).map((v, index) => {
     return new Error('test');
   });
-  const func = RetryFunction((value) => {
+  const func = RetryPromise((value) => {
     if (errors[i]) {
       throw errors[i++];
     }

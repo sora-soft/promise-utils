@@ -1,24 +1,24 @@
-import {DebounceFunction} from '../index.js';
+import {DebouncePromise} from '../index.js';
 import * as ava from 'ava';
 import delay from 'delay';
 const test = ava.default;
 
-test('DebounceFunction once call', async t => {
+test('DebouncePromise once call', async t => {
   const result = 'test';
-  let func = DebounceFunction(async (value) => {
+  let func = DebouncePromise(async (value) => {
     return value;
   }, {milliseconds: 100});
   t.is(await func(result), result);
-  func = DebounceFunction((value) => {
+  func = DebouncePromise((value) => {
     return value;
   }, {milliseconds: 100});
   t.is(await func(result), result);
 });
 
-test('DebounceFunction delay for second call', async (t) => {
+test('DebouncePromise delay for second call', async (t) => {
   const result = 'test';
   const start = Date.now();
-  const func = DebounceFunction(() => result, {milliseconds: 100});
+  const func = DebouncePromise(() => result, {milliseconds: 100});
   void func().then((res) => {
     t.is(res, result);
     t.true(Date.now() - start >= 150);
@@ -30,12 +30,12 @@ test('DebounceFunction delay for second call', async (t) => {
   await delay(150);
 });
 
-test('DebounceFunction multiple calls', async t => {
+test('DebouncePromise multiple calls', async t => {
   const result = 'test';
   let count = 0;
   const start = Date.now();
 
-  const func = DebounceFunction(async value => {
+  const func = DebouncePromise(async value => {
     count++;
     await delay(50);
     return value;
@@ -51,11 +51,11 @@ test('DebounceFunction multiple calls', async t => {
   t.is(await func(6), 6);
 });
 
-test('DebounceFunction takes longer than wait', async t => {
+test('DebouncePromise takes longer than wait', async t => {
   const result = 'test';
   let count = 0;
 
-  const func = DebounceFunction(async value => {
+  const func = DebouncePromise(async value => {
     count++;
     await delay(100);
     return value;

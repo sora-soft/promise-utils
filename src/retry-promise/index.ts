@@ -4,14 +4,14 @@ import {RetryController, RetryError, RetryOptions} from './RetryController.js';
 
 /**
  * @description
- * A function that can be retried.
+ * Make function can be retried.
  * @param {Function} func
  * @param {RetryOptions} options
  * @returns {Function}
  * @example
  * let i = 0;
  * const errors = [new Error('test'), new Error('test'), new Error('test'), null];
- * const func = RetryFunction((value) => {
+ * const func = RetryPromise((value) => {
  *  if (errors[i]) {
  *    throw errors[i++];
  *  }
@@ -26,7 +26,7 @@ import {RetryController, RetryError, RetryOptions} from './RetryController.js';
  * @since 1.2.0
  * @version 1.2.0
  */
-export const RetryFunction = <ArgumentsType extends unknown[], ReturnType>
+export const RetryPromise = <ArgumentsType extends unknown[], ReturnType>
   (func: (...args: ArgumentsType) => PromiseLike<ReturnType> | ReturnType,
     options?: Partial<RetryOptions> & Partial<PromiseWithAbortSignalOptions>)
   : (...args: ArgumentsType) => PromiseLike<ReturnType> => {

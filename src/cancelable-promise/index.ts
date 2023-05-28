@@ -100,6 +100,17 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
     this.#promise = new Promise((resolve, reject) => {
       this.#reject = reject;
 
+      const onCancel: OnCancel = {
+        cancelHandler: (handler) => {
+          if (this.#state !== CancelablePromiseState.PENDING) {
+            throw new Error(`The \`onCancel\` handler was attached after the promise ${this.#state}.`);
+          }
+
+          this.#cancelHandlers.push(handler);
+        },
+        shouldReject: this.#rejectOnCancel,
+      };
+
       const onResolve = (value: ReturnType) => {
         if (this.#state !== CancelablePromiseState.CANCELED || !onCancel.shouldReject) {
           resolve(value);
@@ -112,17 +123,6 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
           reject(error);
           this.#setState(CancelablePromiseState.REJECTED);
         }
-      };
-
-      const onCancel: OnCancel = {
-        cancelHandler: (handler) => {
-          if (this.#state !== CancelablePromiseState.PENDING) {
-            throw new Error(`The \`onCancel\` handler was attached after the promise ${this.#state}.`);
-          }
-
-          this.#cancelHandlers.push(handler);
-        },
-        shouldReject: this.#rejectOnCancel,
       };
 
       Object.defineProperties(onCancel, {

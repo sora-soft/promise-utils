@@ -13,7 +13,7 @@ export class TimeoutError extends Error {
  * @typedef {Object} TimeoutPromiseOptions
  * @template ReturnType
  */
-export interface TimeoutPromiseOptions<ReturnType>  {
+export interface TimeoutPromiseOptions<ReturnType> {
   /**
    * @description
    * The timeout in milliseconds.

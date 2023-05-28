@@ -386,7 +386,7 @@ export class PromiseQueue extends EventEmitter<EventName> {
 
   /**
    * @description
-   * return queue size.
+   * return waitting promise queue size.
    * @returns {number}
    */
   get size(): number {

@@ -4,7 +4,7 @@ import {AsyncFunction, PromiseExecutor} from '../Types.js';
 /**
  * @typedef {Object} PromiseWithAbortSignalOptions
  */
-export interface PromiseWithAbortSignalOptions  {
+export interface PromiseWithAbortSignalOptions {
   /**
    * @description
    * The signal to abort the promise.
@@ -47,6 +47,9 @@ export class PromiseWithAbortSignal<ReturnType> implements PromiseLike<ReturnTyp
    * @version 1.0.0
    */
   constructor(executor: PromiseExecutor<ReturnType>, options: PromiseWithAbortSignalOptions) {
+    if (!options.signal) {
+      throw new TypeError('options.signal is required');
+    }
     this.#signal = options.signal;
     this.#promise = new Promise((resolve, reject) => {
       const abort = () => {

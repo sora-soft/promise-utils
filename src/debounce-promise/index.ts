@@ -1,10 +1,10 @@
 
 /**
- * @typedef {Object} DebounceFunctionOptions
+ * @typedef {Object} DebouncePromiseOptions
  * @description
- * The options for debounce function.
+ * The options for debounce promise.
  */
-export interface DebounceFunctionOptions {
+export interface DebouncePromiseOptions {
   /**
    * @description
    * The milliseconds to wait before calling the function.
@@ -17,11 +17,11 @@ export interface DebounceFunctionOptions {
  * @description
  * Make function can be debounce.
  * @param {Function} func
- * @param {DebounceFunctionOptions} options
+ * @param {DebouncePromiseOptions} options
  * @throws {TypeError}
  * @returns {Function}
  * @example
- * const func = DebounceFunction(async value => {
+ * const func = DebouncePromise(async value => {
  *   count++;
  *   await delay(50);
  *   return value;
@@ -31,9 +31,9 @@ export interface DebounceFunctionOptions {
  * @since 1.1.0
  * @version 1.1.0
  */
-export const DebounceFunction = <ArgumentsType extends unknown[], ReturnType>
+export const DebouncePromise = <ArgumentsType extends unknown[], ReturnType>
   (func: (...args: ArgumentsType) => PromiseLike<ReturnType> | ReturnType,
-    options: DebounceFunctionOptions)
+    options: DebouncePromiseOptions)
   : (...args: ArgumentsType) => PromiseLike<ReturnType> => {
 
   let timeoutId: (NodeJS.Timeout | null) = null;
