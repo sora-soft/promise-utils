@@ -16,17 +16,19 @@ export interface DebouncePromiseOptions {
 /**
  * @description
  * Make function can be debounce.
- * @param {Function} func
- * @param {DebouncePromiseOptions} options
- * @throws {TypeError}
- * @returns {Function}
  * @example
+ * import { DebouncePromise } from '@sora-soft/promise-utils';
  * const func = DebouncePromise(async value => {
  *   count++;
  *   await delay(50);
  *   return value;
  * }, {milliseconds: 100});
  * const results = await Promise.all([1, 2, 3, 4, 5].map(value => func(value))); // [5, 5, 5, 5, 5]
+ * @template ArgumentsType, ReturnType
+ * @param {Function} func
+ * @param {DebouncePromiseOptions} options
+ * @throws {TypeError}
+ * @returns {Function}
  * @public
  * @since 1.1.0
  * @version 1.1.0
@@ -35,6 +37,12 @@ export const DebouncePromise = <ArgumentsType extends unknown[], ReturnType>
   (func: (...args: ArgumentsType) => PromiseLike<ReturnType> | ReturnType,
     options: DebouncePromiseOptions)
   : (...args: ArgumentsType) => PromiseLike<ReturnType> => {
+  if (!func) {
+    throw new TypeError('func is required.');
+  }
+  if (!options) {
+    throw new TypeError('options is required.');
+  }
 
   let timeoutId: (NodeJS.Timeout | null) = null;
   let resolveList: ((value: ReturnType | PromiseLike<ReturnType>) => void)[] = [];

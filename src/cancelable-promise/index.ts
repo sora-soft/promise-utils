@@ -68,7 +68,6 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
   #reject!: (reason?: any) => void;
 
   /**
-   * @class CancelablePromise
    * @description
    * A promise that can be canceled.
    * @example
@@ -85,7 +84,10 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
    * });
    * promise.cancel();
    * @template ReturnType
+   * @class CancelablePromise<ReturnType>
+   * @implements {PromiseLike<ReturnType>}
    * @param {(resolve: (value: ReturnType | PromiseLike<ReturnType>) => void,reject: (reason?: any) => void,onCancel: OnCancel) => void} executor
+   * @throws {TypeError}
    * @returns {CancelablePromise<ReturnType>}
    * @constructor
    * @public
@@ -97,6 +99,9 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
     reject: (reason?: any) => void,
     onCancel: OnCancel
   ) => void) {
+    if (!executor) {
+      throw new TypeError('executor is required.');
+    }
     this.#promise = new Promise((resolve, reject) => {
       this.#reject = reject;
 
@@ -231,6 +236,7 @@ export class CancelablePromise<ReturnType> implements PromiseLike<ReturnType> {
  * @param {PromiseLike<ReturnType> | AsyncFunction<ReturnType>} promiseOrAsync
  * @param {(() => void)} [cancelHandler]
  * @param {boolean} [shouldReject=true]
+ * @throws {TypeError}
  * @returns {CancelablePromise<ReturnType>}
  * @public
  * @since 1.0.0

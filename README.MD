@@ -143,11 +143,11 @@ concurrency为最大同时运行数量，queue的pending为当前正在运行的
 import { PromiseQueue } from '@sora-soft/promise-utils';
 import delay from 'delay';
 const queue = new PromiseQueue({ concurrency: 2 });
-const now = Date.now()
+const start = Date.now()
 queue.addAll(new Array(10).fill(1).map((v, index) => {
     return async () => {
         await delay(1000);
-        console.log(`index:${index} seconds:${Math.round((Date.now() - now) / 1000)} pending:${queue.pending} size:${queue.size}`);
+        console.log(`index:${index} seconds:${Math.round((Date.now() - start) / 1000)} pending:${queue.pending} size:${queue.size}`);
         return index;
     }
 })).then((result) => {
@@ -177,11 +177,11 @@ PromiseQueue还能传入autoStart和timeout，timeout会使添加的变成Timeou
 import { PromiseQueue } from '@sora-soft/promise-utils';
 import delay from 'delay';
 const queue = new PromiseQueue({ concurrency: 2, autoStart: true, timeout: 500, });
-const now = Date.now()
+const start = Date.now()
 queue.addAll(new Array(10).fill(1).map((v, index) => {
     return async () => {
         await delay(1000);
-        console.log(`index:${index} seconds:${Math.round((Date.now() - now) / 1000)} pending:${queue.pending} size:${queue.size}`);
+        console.log(`index:${index} seconds:${Math.round((Date.now() - start) / 1000)} pending:${queue.pending} size:${queue.size}`);
         return index;
     }
 }), {
@@ -208,8 +208,209 @@ console.log('end');
 
 ## DebouncePromise(防抖的Promise)
 将传入的函数变为防抖的Promise，一段时间内调用多次只会运行最后一次，并将最后一次的返回值返回
+
+传入需要运行的函数以及milliseconds，可使该函数在milliseconds毫秒内只运行一次
+```ts
+import { DebouncePromise } from '@sora-soft/promise-utils';
+import delay from 'delay';
+const start = Date.now();
+const func = DebouncePromise((arg) => arg, { milliseconds: 100 });
+void func(1).then((res) => {
+    console.log(`result:${res} use:${Date.now() - start}`)
+});
+await delay(50);
+void func(2).then((res) => {
+    console.log(`result:${res} use:${Date.now() - start}`)
+});
+await delay(50);
+void func(3).then((res) => {
+    console.log(`result:${res} use:${Date.now() - start}`)
+});
+// result:3 use:229
+// result:3 use:232
+// result:3 use:233
+```
+
+支持传入Async函数，在milliseconds毫秒内调用多次只会运行最后一次
+```ts
+import { DebouncePromise } from '@sora-soft/promise-utils';
+import delay from 'delay';
+let count = 0;
+const func = DebouncePromise(async value => {
+    count++;
+    await delay(50);
+    return value;
+}, { milliseconds: 100 });
+console.log(await Promise.all([1, 2, 3, 4, 5].map(value => func(value)))); // [5, 5, 5, 5, 5]
+console.log(count); // 1
+```
+
+其他更多的方式可以查看[DebouncePromise的单元测试](src/debounce-promise/index.spec.ts)
 ## RetryPromise(自动重试的Promise)
 将传入的函数变为可自动重试的Promise
+
+自动重试直到超出重试次数或是超时或是调用的函数不报错
+
+maxRetryCount:最大重试次数，默认为10
+
+minTimeInterval:最小时间间隔，默认为1000
+
+maxTimeInterval:最大时间间隔，默认为Number.POSITIVE_INFINITY
+
+maxRetryTime:最大重试时间，默认为Number.POSITIVE_INFINITY
+
+incrementIntervalFactor:时间间隔递进系数，默认为2
+
+incrementIntervalRandomize:时间间隔是否需要加入随机，默认为false
+
+onError:出错时的额外处理
+
+getTimeout:传入已重试次数，返回下次时间间隔，替代minTimeInterval、maxTimeInterval、incrementIntervalFactor、incrementIntervalRandomize对于重试时间间隔的作用
+
+signal:可使当前的RetryPromise变成PromiseWithAbortSignal
+```ts
+import { RetryPromise } from '@sora-soft/promise-utils';
+const result = 'test';
+let i = 0;
+const start = Date.now();
+const errors = Array(3).fill(1).map((v, index) => {
+    return new Error(`test${index + 1}`);
+});
+const func = RetryPromise((value) => {
+    if (errors[i]) {
+        throw errors[i++];
+    }
+    return value;
+}, {
+    maxRetryCount: 10,
+    minTimeInterval: 1000,
+    maxTimeInterval: Number.POSITIVE_INFINITY,
+    maxRetryTime: Number.POSITIVE_INFINITY,
+    incrementIntervalFactor: 2,
+    incrementIntervalRandomize: false,
+    onError: (error) => {
+        console.error(error)
+    },
+});
+console.log(await func(result))
+console.log(Date.now() - start)
+console.log(i)
+// Error: test1
+// Error: test2
+// Error: test3
+// test
+// 7029
+// 3
+```
+
+当maxRetryCount为1时，只会重试1次，然后取出现次数最多或是最后的错误抛出
+```ts
+import { RetryPromise } from '@sora-soft/promise-utils'
+const result = 'test';
+let i = 0;
+let c = 0;
+const errors = Array(3).fill(1).map((v, index) => {
+    return new Error(`test${index + 1}`);
+}); // [Error: test1, Error: test2, Error: test3]
+const func = RetryPromise(async (value) => {
+    if (errors[i]) {
+        throw errors[i++];
+    }
+    return value;
+}, {
+    onError: (error, currentRetryCount) => {
+        c = currentRetryCount;
+    },
+    maxRetryCount: 1,
+});
+await func(result).catch((error) => {
+    console.error(error) // Error: test2
+})
+console.log(c) // 1
+```
+
+使用signal进行中断
+```ts
+import { RetryPromise } from '@sora-soft/promise-utils'
+const result = 'test';
+const ac = new AbortController();
+let i = 0;
+const errors = Array(3).fill(1).map((v, index) => {
+  return new Error(`test${index + 1}`);
+});
+const func = RetryPromise(async (value) => {
+  if (i === 1) {
+    ac.abort();
+    return;
+  }
+  if (errors[i]) {
+    throw errors[i++];
+  }
+  return value;
+}, {
+  signal: ac.signal,
+});
+await func(result).catch((error) => {
+    console.error(error) // DOMException [AbortError]: This operation was aborted
+})
+```
+
+默认时间间隔计算公式，currentRetryCount为当前重试次数，因此当incrementIntervalFactor为1且incrementIntervalRandomize为false时，时间间隔固定
+```ts
+const random = (incrementIntervalRandomize)
+    ? (Math.random() + 1)
+    : 1;
+const nextTimeInterval = Math.min(
+    Math.round(random * Math.max(minTimeInterval, 1)) * Math.pow(incrementIntervalFactor, currentRetryCount),
+    maxTimeInterval,
+);
+return nextTimeInterval
+```
+```ts
+import { RetryPromise } from '@sora-soft/promise-utils'
+const result = 'test';
+let i = 0;
+const start = Date.now();
+const errors = Array(5).fill(1).map((v, index) => {
+  return new Error(`test${index + 1}`);
+});
+const func = RetryPromise((value) => {
+  if (errors[i]) {
+    throw errors[i++];
+  }
+  return value;
+}, {
+  minTimeInterval: 100,
+  incrementIntervalFactor: 1,
+});
+await func()
+console.log(Date.now() - start); // 541
+```
+
+使用getTimeout
+```ts
+import { RetryPromise } from '@sora-soft/promise-utils'
+const result = 'test';
+let i = 0;
+const start = Date.now();
+const errors = Array(5).fill(1).map((v, index) => {
+  return new Error(`test${index + 1}`);
+});
+const func = RetryPromise((value) => {
+  if (errors[i]) {
+    throw errors[i++];
+  }
+  return value;
+}, {
+  getTimeout: (currentRetryCount) => {
+    return 300;
+  }
+});
+await func(result)
+console.log(Date.now() - start) // 1559
+```
+
+其他更多的方式可以查看[RetryPromise的单元测试](src/retry-promise/index.spec.ts)
 ## CancelablePromise(可取消的Promise)
 可以查看[CancelablePromise的单元测试](src/cancelable-promise/index.spec.ts)
 

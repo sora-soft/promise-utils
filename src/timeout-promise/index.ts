@@ -40,25 +40,21 @@ export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
   #timeoutId?: NodeJS.Timeout;
 
   /**
-   * @class TimeoutPromise
    * @description
    * A promise that can be timed out.
    * @example
-   * const promise = new TimeoutPromise((resolve, reject) => {
-   *  setTimeout(() => {
-   *    resolve('Hello world!');
-   *  }, 1000);
-   * }, {
-   *  milliseconds: 500,
-   *  message: 'Promise timed out',
-   *  fallback: () => {
-   *    return 'Fallback value';
-   *  },
-   * });
-   * promise.catch((error) => {
-   *  console.error(error); // TimeoutError: Promise timeout
+   * import { TimeoutPromise } from '@sora-soft/promise-utils';
+   * const result = 'test';
+   * new TimeoutPromise((resolve) => {
+   *     setTimeout(() => {
+   *         resolve(result);
+   *     }, 100);
+   * }, { milliseconds: 50 }).catch((e) => {
+   *     console.error(e); // TimeoutError: Promise timeout
    * });
    * @template ReturnType
+   * @class TimeoutPromise
+   * @implements {PromiseLike<ReturnType>}
    * @param {PromiseExecutor<ReturnType>} executor
    * @param {TimeoutPromiseOptions<ReturnType>} options
    * @throws {TypeError}
@@ -69,6 +65,12 @@ export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
    * @version 1.0.0
    */
   constructor(executor: PromiseExecutor<ReturnType>, options: TimeoutPromiseOptions<ReturnType>) {
+    if (!executor) {
+      throw new TypeError('executor is required.');
+    }
+    if (!options) {
+      throw new TypeError('options is required.');
+    }
     const {
       milliseconds,
       message,
@@ -140,29 +142,34 @@ export class TimeoutPromise<ReturnType> implements PromiseLike<ReturnType>{
 }
 
 /**
- * @function BeAbleToTimeout
  * @description
  * A function that returns a promise that can be timed out.
  * @example
- * const promise = BeAbleToTimeout(() => {
- *  return new Promise((resolve, reject) => {
- *    setTimeout(() => {
- *      resolve('Hello world!');
- *    }, 1000);
- *  });
+ * import { BeAbleToTimeout } from '@sora-soft/promise-utils';
+ * import delay from 'delay';
+ * const result = 'test';
+ * BeAbleToTimeout(async () => {
+ *     return result;
  * }, {
- *  milliseconds: 500,
- *  message: 'Promise timed out',
- *  fallback: () => {
- *    return 'Fallback value';
- *  },
- * });
- * promise.catch((error) => {
- *  console.error(error); // TimeoutError: Promise timeout
- * });
+ *     milliseconds: 50
+ * }).then((res) => {
+ *     console.log(res); // test
+ * })
+ * BeAbleToTimeout(async () => {
+ *     await delay(100);
+ *     return result;
+ * }, {
+ *     milliseconds: 50,
+ *     fallback: () => {
+ *         return 'fallback';
+ *     }
+ * }).then((res) => {
+ *     console.log(res); // fallback
+ * })
  * @template ReturnType
  * @param {PromiseLike<ReturnType> | AsyncFunction<ReturnType>} promiseOrAsync
  * @param {TimeoutPromiseOptions<ReturnType>} options
+ * @throws {TypeError}
  * @returns {TimeoutPromise<ReturnType>}
  * @public
  * @since 1.0.0

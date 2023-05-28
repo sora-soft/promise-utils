@@ -3,11 +3,9 @@ import {PromiseWithAbortSignal, PromiseWithAbortSignalOptions} from '../index.js
 import {RetryController, RetryError, RetryOptions} from './RetryController.js';
 
 /**
+ * @template ArgumentsType
  * @description
  * Make function can be retried.
- * @param {Function} func
- * @param {RetryOptions} options
- * @returns {Function}
  * @example
  * let i = 0;
  * const errors = [new Error('test'), new Error('test'), new Error('test'), null];
@@ -22,6 +20,10 @@ import {RetryController, RetryError, RetryOptions} from './RetryController.js';
  *  },
  * });
  * await func('test'); // 'test'
+ * @param {Function} func
+ * @param {RetryOptions} options
+ * @throws {TypeError}
+ * @returns {Function}
  * @public
  * @since 1.2.0
  * @version 1.2.0
@@ -30,6 +32,9 @@ export const RetryPromise = <ArgumentsType extends unknown[], ReturnType>
   (func: (...args: ArgumentsType) => PromiseLike<ReturnType> | ReturnType,
     options?: Partial<RetryOptions> & Partial<PromiseWithAbortSignalOptions>)
   : (...args: ArgumentsType) => PromiseLike<ReturnType> => {
+  if (!func) {
+    throw new TypeError('func is required.');
+  }
 
   return function (..._args) {
     const controller = new RetryController(options);

@@ -102,9 +102,11 @@ export class PromiseQueue extends EventEmitter<EventName> {
 
   /**
    * @class PromiseQueue
+   * @extends {EventEmitter}
    * @description
    * A queue for promises.
    * @example
+   * import { PromiseQueue } from '@sora-soft/promise-utils';
    * const queue = new PromiseQueue({
    *  interval: 1000,
    *  concurrency: 2,
@@ -113,10 +115,9 @@ export class PromiseQueue extends EventEmitter<EventName> {
    * queue.add(async() => {
    *  return 'result';
    * })
-   * @template ReturnType
    * @param {QueueOptions} options
    * @throws {TypeError}
-   * @returns {PromiseQueue<ReturnType>}
+   * @returns {PromiseQueue}
    * @constructor
    * @public
    * @since 1.0.0
