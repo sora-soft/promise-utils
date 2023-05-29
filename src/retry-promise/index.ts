@@ -30,7 +30,7 @@ import {RetryController, RetryError, RetryOptions} from './RetryController.js';
  */
 export const RetryPromise = <ArgumentsType extends unknown[], ReturnType>
   (func: (...args: ArgumentsType) => PromiseLike<ReturnType> | ReturnType,
-    options?: Partial<RetryOptions> & Partial<PromiseWithAbortSignalOptions>)
+    options: Partial<RetryOptions> & Partial<PromiseWithAbortSignalOptions> = {})
   : (...args: ArgumentsType) => PromiseLike<ReturnType> => {
   if (!func) {
     throw new TypeError('func is required.');
@@ -41,9 +41,9 @@ export const RetryPromise = <ArgumentsType extends unknown[], ReturnType>
     const executor: PromiseExecutor<ReturnType> = (resolve, reject) => {
       const abort = () => {
         controller.stop();
-        reject(options?.signal?.reason);
+        reject(options.signal?.reason);
       };
-      if (options?.signal) {
+      if (options.signal) {
         if (options.signal.aborted) {
           abort();
         } else {
@@ -73,7 +73,7 @@ export const RetryPromise = <ArgumentsType extends unknown[], ReturnType>
         }
       });
     };
-    return options?.signal ? new PromiseWithAbortSignal(executor, {
+    return options.signal ? new PromiseWithAbortSignal(executor, {
       signal: options.signal,
     }) : new Promise(executor);
   };

@@ -123,7 +123,7 @@ export class PromiseQueue extends EventEmitter<EventName> {
    * @since 1.0.0
    * @version 1.0.0
    */
-  constructor(options?: QueueOptions) {
+  constructor(options: QueueOptions = {}) {
     super();
 
     options = {
@@ -138,10 +138,10 @@ export class PromiseQueue extends EventEmitter<EventName> {
     this.#isPaused = options.autoStart === false;
   }
 
-  #enqueue(run: RunElement, options?: Partial<PriorityOptions>): void {
-    options = {
+  #enqueue(run: RunElement, sourceOptions: PriorityOptions): void {
+    const options: PriorityOptions = {
       priority: 0,
-      ...options,
+      ...sourceOptions,
     };
 
     const element = {
@@ -238,20 +238,22 @@ export class PromiseQueue extends EventEmitter<EventName> {
   /**
    * @description
    * add promise to queue.
-   * @param {PromiseLike<ReturnType> | AsyncFunction<ReturnType>} function_
+   * @param {PromiseLike<ReturnType> | AsyncFunction<ReturnType>} promiseOrAsync
    * @param {Partial<PromiseOptions>} options
    * @template ReturnType
    * @returns {Promise<ReturnType>}
    */
-  async add<ReturnType>(function_: PromiseLike<ReturnType> | AsyncFunction<ReturnType>, options?: Partial<PromiseOptions>): Promise<ReturnType>;
-  async add<ReturnType>(function_: PromiseLike<ReturnType> | AsyncFunction<ReturnType>, options: Partial<PromiseOptions> = {}): Promise<ReturnType> {
+  async add<ReturnType>(promiseOrAsync: PromiseLike<ReturnType> | AsyncFunction<ReturnType>, options: PromiseOptions = {}): Promise<ReturnType> {
 
+    if (!promiseOrAsync) {
+      throw new TypeError('function_ is required.');
+    }
     return new Promise((resolve, reject) => {
       this.#enqueue(async () => {
         this.#pending++;
 
         try {
-          let operation = function_;
+          let operation = promiseOrAsync;
           if (options.signal) {
             operation = BeAbleToAbort(operation, {signal: options.signal});
           }
@@ -280,20 +282,16 @@ export class PromiseQueue extends EventEmitter<EventName> {
   /**
    * @description
    * add promise to queue.
-   * @param {ReadonlyArray<PromiseLike<ReturnType> | AsyncFunction<ReturnType>>} functions
-   * @param {Partial<PromiseOptions>} options
+   * @param {ReadonlyArray<PromiseLike<ReturnType> | AsyncFunction<ReturnType>>} promiseOrAsyncs
+   * @param {PromiseOptions} options
    * @template ReturnType
-   * @returns {Promise<Array<ReturnType>>}
+   * @returns {Promise<PromiseSettledResult<Awaited<ReturnType>>[]>}
    */
   async addAll<ReturnType>(
-    functions: ReadonlyArray<PromiseLike<ReturnType> | AsyncFunction<ReturnType>>,
-    options?: Partial<PromiseOptions>,
-  ): Promise<Array<ReturnType>>;
-  async addAll<ReturnType>(
-    functions: ReadonlyArray<PromiseLike<ReturnType> | AsyncFunction<ReturnType>>,
-    options?: Partial<PromiseOptions>,
-  ): Promise<Array<ReturnType>> {
-    return Promise.all(functions.map(async function_ => this.add(function_, options)));
+    promiseOrAsyncs: ReadonlyArray<PromiseLike<ReturnType> | AsyncFunction<ReturnType>>,
+    options: PromiseOptions = {},
+  ): Promise<PromiseSettledResult<Awaited<ReturnType>>[]> {
+    return Promise.allSettled(promiseOrAsyncs.map(async function_ => this.add(function_, options)));
   }
 
   /**

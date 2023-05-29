@@ -277,12 +277,18 @@ test('TaskQueue addAll', async (t) => {
     },
     async () => {
       await delay(20 + Math.random() * 10);
-      return 2;
+      throw new Error('test');
     },
   ]);
   t.is(queue.size, 0);
   t.is(queue.pending, 2);
-  t.deepEqual(await promise, [1, 2]);
+  t.deepEqual(await promise, [{
+    status: 'fulfilled',
+    value: 1,
+  }, {
+    reason: new Error('test'),
+    status: 'rejected',
+  }]);
   queue.concurrency = 1;
   promise = queue.addAll([
     async () => {
@@ -296,12 +302,18 @@ test('TaskQueue addAll', async (t) => {
   ]);
   t.is(queue.size, 1);
   t.is(queue.pending, 1);
-  t.deepEqual(await promise, [1, 2]);
+  t.deepEqual(await promise, [{
+    status: 'fulfilled',
+    value: 1,
+  }, {
+    status: 'fulfilled',
+    value: 2,
+  }]);
 });
 
 test('TaskQueue autoStart false', async (t) => {
   const result = 'test';
-  const queue = new PromiseQueue({concurrency: 2, autoStart:false});
+  const queue = new PromiseQueue({concurrency: 2, autoStart: false});
   const promise = queue.addAll([
     async () => {
       await delay(20 + Math.random() * 10);
@@ -327,12 +339,24 @@ test('TaskQueue autoStart false', async (t) => {
   t.is(queue.size, 2);
   t.is(queue.pending, 2);
   t.is(queue.isPaused, false);
-  t.deepEqual(await promise, [1, 2, 3, 4]);
+  t.deepEqual(await promise, [{
+    status: 'fulfilled',
+    value: 1,
+  }, {
+    status: 'fulfilled',
+    value: 2,
+  }, {
+    status: 'fulfilled',
+    value: 3,
+  }, {
+    status: 'fulfilled',
+    value: 4,
+  }]);
 });
 
 test('TaskQueue pause', async (t) => {
   const result = 'test';
-  const queue = new PromiseQueue({concurrency: 2, autoStart:false});
+  const queue = new PromiseQueue({concurrency: 2, autoStart: false});
   const promise = queue.addAll([
     async () => {
       await delay(20 + Math.random() * 10);
@@ -373,5 +397,17 @@ test('TaskQueue pause', async (t) => {
   t.is(queue.size, 1);
   t.is(queue.pending, 2);
   t.is(queue.isPaused, false);
-  t.deepEqual(await promise, [1, 2, 3, 4]);
+  t.deepEqual(await promise, [{
+    status: 'fulfilled',
+    value: 1,
+  }, {
+    status: 'fulfilled',
+    value: 2,
+  }, {
+    status: 'fulfilled',
+    value: 3,
+  }, {
+    status: 'fulfilled',
+    value: 4,
+  }]);
 });

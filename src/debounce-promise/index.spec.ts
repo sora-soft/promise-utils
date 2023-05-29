@@ -15,6 +15,16 @@ test('DebouncePromise once call', async t => {
   t.is(await func(result), result);
 });
 
+test('DebouncePromise once call return promise', async t => {
+  const result = 'test';
+  const func = DebouncePromise((value: string) => {
+    return new Promise((resolve) => {
+      resolve(value);
+    });
+  }, {milliseconds: 100});
+  t.is(await func(result), result);
+});
+
 test('DebouncePromise delay for second call', async (t) => {
   const result = 'test';
   const start = Date.now();

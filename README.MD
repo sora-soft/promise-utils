@@ -17,7 +17,31 @@ npm install @sora-soft/promise-utils
   - [CancelablePromise(可取消的Promise)](#cancelablepromise可取消的promise)
 
 ## PromiseWithAbortSignal(可中断的Promise)
-用和创建Promise相同的方式传入PromiseExecutor并在附加选项中传入AbortController的signal
+提供PromiseWithAbortSignal和BeAbleToAbort，将一个普通的Promise对象转换为能够响应AbortController中止信号的Promise对象。PromiseWithAbortSignal\<ReturnType\>实现了PromiseLike\<ReturnType\>接口，因此可以使用 then/catch/finally等方法。
+### new PromiseWithAbortSignal\<ReturnType\>(executor,options)
+构造函数constructor(executor, options)接收两个参数，第一个参数是一个Promise执行器函数，第二个参数是一个包含中止信号的选项对象。
+#### executor
+Type: `Function`
+
+Example: `(resolve,reject)=>{}`
+
+新建普通Promise时使用的参数
+#### options
+##### signal
+Type: `AbortSignal`
+
+AbortController对象的signal属性
+
+### BeAbleToAbort(promiseOrAsync,options)
+options同PromiseWithAbortSignal
+#### promiseOrAsync
+Type: `Function`
+
+Example: `new Promise((resolve,reject)=>{}) | async()=>{}`
+
+一个需要包装的Promise或是Async函数
+
+### 例子
 
 当调用这个AbortController的abort()时，Promise会reject
 ```ts
@@ -44,7 +68,7 @@ const result = await new PromiseWithAbortSignal((resolve) => {
 console.log(result); // result
 ```
 
-也可以使用BeAbleToAbort将PromiseLike或者Async函数封装成PromiseWithAbortSignal
+可以使用BeAbleToAbort将PromiseLike或者Async函数封装成PromiseWithAbortSignal
 ```ts
 import { BeAbleToAbort } from '@sora-soft/promise-utils';
 import delay from 'delay';
@@ -59,10 +83,77 @@ promiseWithAbortSignal.catch((e) => {
 });
 ```
 
+```ts
+import { BeAbleToAbort } from '@sora-soft/promise-utils';
+import delay from 'delay'
+const result = 'test1';
+const result2 = 'test2';
+const reason = 'reason';
+const ac = new AbortController();
+setTimeout(() => {
+    ac.abort(new Error(reason));
+}, 20);
+ac.signal.onabort = () => {
+    console.error(ac.signal.reason); // error: reason
+};
+const res = await BeAbleToAbort(async () => {
+    await delay(50);
+    return result;
+}, { signal: ac.signal }).then((r) => {
+    console.log('never log')
+    return r;
+}).catch((e) => {
+    console.error(e); // error: reason
+    return result2;
+});
+console.log(res) // test2
+await delay(50);
+```
+
 其他更多的方式可以查看[PromiseWithAbortSignal的单元测试](src/promise-with-abort-signal/index.spec.ts)
 
 ## TimeoutPromise(超时即中断的Promise)
-用和创建Promise相同的方式传入PromiseExecutor并在附加选项中传入超时毫秒数milliseconds
+提供TimeoutPromise和BeAbleToTimeout，将一个普通的Promise对象转换为能够响应超时信号的Promise对象。TimeoutPromise\<ReturnType\>实现了PromiseLike\<ReturnType\>接口，因此可以使用 then/catch/finally等方法。
+
+### new TimeoutPromise\<ReturnType\>(executor,options)
+构造函数constructor(executor, options)接收两个参数，第一个参数是一个Promise执行器函数，第二个参数是一个包含超时时间和其他选项的对象。
+#### executor
+Type: `Function`
+
+Example: `(resolve,reject)=>{}`
+
+新建普通Promise时使用的参数
+#### options
+##### milliseconds
+Type: `Number`
+
+超时需要的毫秒数
+##### message?
+Type: `String`
+
+超时时的报错信息，可选，不填时报错信息为Promise timeout
+##### fallback?
+Type: `Function`
+
+Return: `ReturnType`
+
+超时时返回默认值的函数，可选
+
+### BeAbleToAbort(promiseOrAsync,options)
+options同TimeoutPromise
+#### promiseOrAsync
+Type: `Function`
+
+Example: `new Promise((resolve,reject)=>{}) | async()=>{}`
+
+一个需要包装的Promise或是Async函数
+
+### 函数
+
+#### .clear()
+清除超时的timeout
+
+### 例子
 
 当调用这个TimeoutPromise超时时，Promise会reject
 ```ts
@@ -133,12 +224,117 @@ BeAbleToTimeout(async () => {
 })
 ```
 
+TimeoutPromise提供.clear清除超时时间
+```ts
+import { BeAbleToTimeout } from '@sora-soft/promise-utils';
+import delay from 'delay'
+const result1 = 'result1';
+const result2 = 'result2';
+const start = Date.now();
+const timeoutPromise = BeAbleToTimeout(async () => {
+    await delay(100)
+    return result1
+}, {
+    milliseconds: 50,
+    fallback: () => result2
+});
+void timeoutPromise.then(async (res) => {
+    console.log(Date.now() - start); // 135
+    console.log(res); // result1
+    return res;
+});
+timeoutPromise.clear();
+console.log(await timeoutPromise); // result1
+```
+
 其他更多的方式可以查看[TimeoutPromise的单元测试](src/timeout-promise/index.spec.ts)
 
 ## PromiseQueue(Promise队列)
-提供一个队列同时运行多个任务，任务可以是Promise或是Async函数，当达到最大同时运行数量后加入的任务等待先加入的任务运行完毕后再运行，提供onEmpty和onIdle帮助开发者在该队列处于未达到最大同时运行数量或是所有任务均已完成时进行其他操作
+提供一个队列同时运行多个任务，任务可以是Promise或是Async函数，当达到最大同时运行数量后加入的任务等待先加入的任务运行完毕后再运行，提供onEmpty和onIdle帮助开发者在该队列处于未达到最大同时运行数量或是所有任务均已完成时进行其他操作，继承了EventEmitter，因此也可以自行处理事件。
 
-concurrency为最大同时运行数量，queue的pending为当前正在运行的数量，size为正在等待的数量，add或addAll本身返回添加的任务的返回值
+### new PromiseQueue(options?)
+构造函数constructor(options)接收一个可选的参数options，用于配置队列的并发数量、自动启动、超时等选项。构造函数创建一个新的PromiseQueue对象，并在内部维护一个队列和一个计数器来管理队列中的Promise。
+
+#### options?
+##### concurrency?
+Type: `Number`
+
+Default: `Number.POSITIVE_INFINITY`
+
+最大同时运行数量
+##### autoStart?
+Type: `Boolean`
+
+Default: `true`
+
+是否自动运行
+##### timeout?
+Type: `Number`
+
+如果设置了timeout，每一个加入的Promise都会变成TimeoutPromise
+
+### 函数
+
+#### .add(promiseOrAsync, addOptions?)
+
+##### promiseOrAsync
+Type: `Function`
+
+Example: `new Promise((resolve,reject)=>{}) | async()=>{}`
+
+一个Promise或是Async函数
+
+##### addOptions?
+
+###### signal?
+Type: `AbortSignal`
+
+AbortController对象的signal属性，如果有，则将该传入的Promise变成PromiseWithAbortSignal
+
+###### priority?
+Type: `Number`
+
+优先级，值高的会优先进入运行
+
+#### .addAll(promiseOrAsyncs,addOptions?)
+promiseOrAsyncs为add的第一个参数promiseOrAsync的数组类型,addOptions同add的addOptions
+
+#### .start()
+如果queue暂停或是没有自动运行，可以调用该函数开始队列
+
+#### .pause()
+如果queue在运行，可以调用该函数暂停
+
+#### .clear()
+清空等待中的数组
+
+#### .onEmpty()
+返回一个Promise，当队列运行中的有空位时该Promise会调用.then
+
+#### .onSizeLessThan(limit)
+
+##### limit
+Type: `Number`
+
+如果等待中的任务数量少于limit则返回的Promise会调用.then
+
+#### .onIdle()
+返回一个Promise，当没有任务在运行时该Promise会调用.then
+
+#### concurrency
+当前最大并行运行数量，可以动态设置
+
+#### size
+正在等待的数量
+
+#### pending
+当前正在运行的数量
+
+#### isPaused
+是否暂停中
+
+### 例子
+add或addAll本身返回添加的任务的返回值
 ```ts
 import { PromiseQueue } from '@sora-soft/promise-utils';
 import delay from 'delay';
@@ -204,10 +400,54 @@ console.log('end');
 // index:9 seconds:3 pending:0 size:0
 ```
 
+动态变更concurrency
+```ts
+import { PromiseQueue } from '@sora-soft/promise-utils';
+import delay from 'delay'
+let concurrency = 5;
+const queue = new PromiseQueue({ concurrency });
+let running = 0;
+for (const i of Array(100).keys()) {
+    void queue.add(async () => {
+        running++;
+        console.log(`running:${running} pending:${queue.pending} concurrency:${concurrency}`)
+        if (queue.concurrency < queue.pending) {
+            throw new Error('never happen')
+        }
+        await delay(10 + Math.random() * 20);
+        running--;
+        if (i % 12 === 0) {
+            queue.concurrency = ++concurrency;
+        }
+        if (i % 15 === 0) {
+            queue.concurrency = --concurrency;
+        }
+    });
+}
+await queue.onIdle();
+```
+
 其他更多的方式可以查看[PromiseQueue的单元测试](src/promise-queue/index.spec.ts)
 
 ## DebouncePromise(防抖的Promise)
-将传入的函数变为防抖的Promise，一段时间内调用多次只会运行最后一次，并将最后一次的返回值返回
+提供DebouncePromise用于将一个函数转换为具有防抖效果的Promise，即在一定时间内，多次调用函数只会执行一次，在等待时间内，如果有新的调用，则重置等待时间，并且只会执行最后一次调用。这个函数的作用是可以用来优化一些需要频繁触发的函数。
+
+### DebouncePromise(func,options)
+函数接受两个参数
+#### func
+Type: `Function`
+
+Example: `()=>new Promise((resolve,reject)=>{}) | async()=>{}`
+
+要转换的函数，该函数必须返回一个 Promise 类型的对象或一个普通的值。如果该函数是异步函数，则必须返回一个 Promise 类型的对象。
+#### options
+一个对象，包含了milliseconds
+##### milliseconds
+Type: `Number`
+
+防抖间隔的时间milliseconds，以毫秒为单位。
+
+### 例子
 
 传入需要运行的函数以及milliseconds，可使该函数在milliseconds毫秒内只运行一次
 ```ts
@@ -247,27 +487,96 @@ console.log(count); // 1
 
 其他更多的方式可以查看[DebouncePromise的单元测试](src/debounce-promise/index.spec.ts)
 ## RetryPromise(自动重试的Promise)
-将传入的函数变为可自动重试的Promise
+提供RetryPromise将传入的函数变为可自动重试的Promise，函数返回一个新的Promise，与原始函数具有相同的参数和返回值类型。当新函数被调用时，它会在发生错误时自动进行重试，如果超过了最大重试次数则会抛出RetryError异常。RetryController是 RetryPromise函数内部使用的重试控制器，它负责控制重试的次数、时间间隔等。提供了retry、try、reset、stop、errors、retryCount和mainError等方法和属性，用于控制和监控重试的过程和状态。
+### RetryPromise(func,options)
 
-自动重试直到超出重试次数或是超时或是调用的函数不报错
+#### func
+Type: `Function`
 
-maxRetryCount:最大重试次数，默认为10
+Example: `()=>new Promise((resolve,reject)=>{}) | async()=>{}`
 
-minTimeInterval:最小时间间隔，默认为1000
+要转换的函数，该函数必须返回一个 Promise 类型的对象或一个普通的值。如果该函数是异步函数，则必须返回一个 Promise 类型的对象。
 
-maxTimeInterval:最大时间间隔，默认为Number.POSITIVE_INFINITY
+#### options?
 
-maxRetryTime:最大重试时间，默认为Number.POSITIVE_INFINITY
+##### maxRetryCount
+Type: `Number`
 
-incrementIntervalFactor:时间间隔递进系数，默认为2
+Default: `10`
 
-incrementIntervalRandomize:时间间隔是否需要加入随机，默认为false
+最大重试次数
+##### minTimeInterval
+Type: `Number`
 
-onError:出错时的额外处理
+Default: `1000`
 
-getTimeout:传入已重试次数，返回下次时间间隔，替代minTimeInterval、maxTimeInterval、incrementIntervalFactor、incrementIntervalRandomize对于重试时间间隔的作用
+最小时间间隔
+##### maxTimeInterval
+Type: `Number`
 
-signal:可使当前的RetryPromise变成PromiseWithAbortSignal
+Default: `Number.POSITIVE_INFINITY`
+
+最大时间间隔
+##### maxRetryTime
+Type: `Number`
+
+Default: `Number.POSITIVE_INFINITY`
+
+最大重试时间
+##### incrementIntervalFactor
+Type: `Number`
+
+Default: `2`
+
+时间间隔递进系数
+##### incrementIntervalRandomize
+Type: `Boolean`
+
+Default: `false`
+
+时间间隔是否需要加入随机
+##### onError?
+Type: `Function`
+
+Example: `(error,currentRetryCount,nextTimeInterval)=>{}`
+
+###### error
+Type: `Error`
+
+报错
+
+###### currentRetryCount
+Type: `Number`
+
+当前重试次数
+
+###### nextTimeInterval
+Type: `Number`
+
+下次重试间隔
+
+出错时的额外处理
+##### getTimeout?
+Type: `Function`
+
+Example: `(currentRetryCount)=>{return 1000}`
+
+###### currentRetryCount
+Type: `Number`
+
+当前重试次数
+
+传入已重试次数，返回下次时间间隔，替代minTimeInterval、maxTimeInterval、incrementIntervalFactor、incrementIntervalRandomize对于重试时间间隔的作用
+##### signal?
+Type: `AbortSignal`
+
+AbortController对象的signal属性，可使当前的RetryPromise变成PromiseWithAbortSignal
+
+### new RetryController(options)
+
+#### options
+同RetryPromise的options，少了signal
+### 例子
 ```ts
 import { RetryPromise } from '@sora-soft/promise-utils';
 const result = 'test';
@@ -408,6 +717,28 @@ const func = RetryPromise((value) => {
 });
 await func(result)
 console.log(Date.now() - start) // 1559
+```
+
+直接使用RetryController，一般情况下不推荐，可以用RetryPromise解决问题就用RetryPromise
+```ts
+import { RetryController } from '@sora-soft/promise-utils';
+import delay from 'delay'
+const controller = new RetryController({
+    maxRetryCount: 10,
+    minTimeInterval: 500,
+    maxTimeInterval: Number.POSITIVE_INFINITY,
+    maxRetryTime: Number.POSITIVE_INFINITY,
+    incrementIntervalFactor: 1,
+    incrementIntervalRandomize: false,
+    onError: () => { },
+});
+let i = 0;
+controller.try(async (retryCount) => {
+    controller.retry(retryCount < 5 ? new Error('test') : null);
+    i = retryCount;
+});
+await delay(5000)
+console.log(i) // 5
 ```
 
 其他更多的方式可以查看[RetryPromise的单元测试](src/retry-promise/index.spec.ts)
