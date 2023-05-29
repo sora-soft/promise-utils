@@ -487,7 +487,7 @@ console.log(count); // 1
 
 其他更多的方式可以查看[DebouncePromise的单元测试](src/debounce-promise/index.spec.ts)
 ## RetryPromise(自动重试的Promise)
-提供RetryPromise将传入的函数变为可自动重试的Promise，函数返回一个新的Promise，与原始函数具有相同的参数和返回值类型。当新函数被调用时，它会在发生错误时自动进行重试，如果超过了最大重试次数则会抛出RetryError异常。RetryController是 RetryPromise函数内部使用的重试控制器，它负责控制重试的次数、时间间隔等。提供了retry、try、reset、stop、errors、retryCount和mainError等方法和属性，用于控制和监控重试的过程和状态。
+提供RetryPromise将传入的函数变为可自动重试的Promise，函数返回一个新的Promise，与原始函数具有相同的参数和返回值类型。当新函数被调用时，它会在发生错误时自动进行重试，如果超过了最大重试次数则会抛出RetryError异常。RetryController是RetryPromise函数内部使用的重试控制器，它负责控制重试的次数、时间间隔等。提供了retry、try、reset、stop、errors、retryCount和mainError等方法和属性，用于控制和监控重试的过程和状态。
 ### RetryPromise(func,options)
 
 #### func

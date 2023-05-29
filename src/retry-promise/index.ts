@@ -31,7 +31,7 @@ import {RetryController, RetryError, RetryOptions} from './RetryController.js';
 export const RetryPromise = <ArgumentsType extends unknown[], ReturnType>
   (func: (...args: ArgumentsType) => PromiseLike<ReturnType> | ReturnType,
     options: Partial<RetryOptions> & Partial<PromiseWithAbortSignalOptions> = {})
-  : (...args: ArgumentsType) => PromiseLike<ReturnType> => {
+  : (...args: ArgumentsType) => (Promise<ReturnType> | PromiseWithAbortSignal<ReturnType>) => {
   if (!func) {
     throw new TypeError('func is required.');
   }

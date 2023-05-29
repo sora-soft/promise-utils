@@ -36,7 +36,7 @@ export interface DebouncePromiseOptions {
 export const DebouncePromise = <ArgumentsType extends unknown[], ReturnType>
   (func: (...args: ArgumentsType) => PromiseLike<ReturnType> | ReturnType,
     options: DebouncePromiseOptions)
-  : (...args: ArgumentsType) => PromiseLike<ReturnType> => {
+  : (...args: ArgumentsType) => Promise<ReturnType> => {
   if (!func) {
     throw new TypeError('func is required.');
   }
