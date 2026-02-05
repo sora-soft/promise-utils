@@ -485,6 +485,36 @@ console.log(await Promise.all([1, 2, 3, 4, 5].map(value => func(value)))); // [5
 console.log(count); // 1
 ```
 
+### 错误处理
+
+`DebouncePromise` 的所有调用者共享同一执行结果。如果被包装的函数抛出错误或返回 rejected promise，所有等待中的调用者都会收到相同的错误。
+
+```ts
+import { DebouncePromise } from '@sora-soft/promise-utils';
+
+const fetchWithRetry = DebouncePromise(async (url: string) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+  return response.json();
+}, { milliseconds: 100 });
+
+// 正确的错误处理方式
+try {
+  const data = await fetchWithRetry('/api/data');
+  console.log(data);
+} catch (error) {
+  console.error('请求失败:', error);
+  // 所有并发调用都会收到相同的错误
+}
+```
+
+**重要提示**: 
+- 如果第一个执行的请求失败，所有等待中的调用都会收到相同的错误
+- 建议在被包装函数内部实现错误恢复逻辑（如重试、降级等）
+- 对于需要独立错误处理的场景，考虑使用 `PromiseQueue` 代替
+
 其他更多的方式可以查看[DebouncePromise的单元测试](src/debounce-promise/index.spec.ts)
 ## RetryPromise(自动重试的Promise)
 提供RetryPromise将传入的函数变为可自动重试的Promise，函数返回一个新的Promise，与原始函数具有相同的参数和返回值类型。当新函数被调用时，它会在发生错误时自动进行重试，如果超过了最大重试次数则会抛出RetryError异常。RetryController是RetryPromise函数内部使用的重试控制器，它负责控制重试的次数、时间间隔等。提供了retry、try、reset、stop、errors、retryCount和mainError等方法和属性，用于控制和监控重试的过程和状态。

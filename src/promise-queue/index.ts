@@ -31,6 +31,21 @@ export interface PromiseOptions extends PriorityOptions {
 }
 
 /**
+ * @typedef {Object} AddAllOptions
+ * @description
+ * The options for addAll.
+ */
+export interface AddAllOptions extends PromiseOptions {
+  /**
+   * @description
+   * Whether to fail fast. true = Promise.all, false = Promise.allSettled
+   * @type {boolean}
+   * @default false
+   */
+  failFast?: boolean;
+}
+
+/**
  * @typedef {Object} QueueOptions
  * @description
  * The options for queue.
@@ -283,15 +298,21 @@ export class PromiseQueue extends EventEmitter<EventName> {
    * @description
    * add promise to queue.
    * @param {ReadonlyArray<PromiseLike<ReturnType> | AsyncFunction<ReturnType>>} promiseOrAsyncs
-   * @param {PromiseOptions} options
+   * @param {AddAllOptions} options
    * @template ReturnType
-   * @returns {Promise<PromiseSettledResult<Awaited<ReturnType>>[]>}
+   * @returns {Promise<PromiseSettledResult<Awaited<ReturnType>>[] | Awaited<ReturnType>[]>}
    */
   async addAll<ReturnType>(
     promiseOrAsyncs: ReadonlyArray<PromiseLike<ReturnType> | AsyncFunction<ReturnType>>,
-    options: PromiseOptions = {},
-  ): Promise<PromiseSettledResult<Awaited<ReturnType>>[]> {
-    return Promise.allSettled(promiseOrAsyncs.map(async function_ => this.add(function_, options)));
+    options: AddAllOptions = {},
+  ): Promise<PromiseSettledResult<Awaited<ReturnType>>[] | Awaited<ReturnType>[]> {
+    const tasks = promiseOrAsyncs.map(async function_ => this.add(function_, options));
+
+    if (options.failFast) {
+      return Promise.all(tasks);
+    } else {
+      return Promise.allSettled(tasks);
+    }
   }
 
   /**

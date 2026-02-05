@@ -105,6 +105,8 @@ export class RetryController {
   #errors: Error[] = [];
   #startTime = 0;
   #retryCount = 0;
+  #cachedMainError: Error | null = null;
+  #isMainErrorStale: boolean = true;
 
   #func: (retryCount: number) => void = () => { };
   #getNextTimeout = (currentRetryCount: number): number | undefined => {
@@ -181,6 +183,7 @@ export class RetryController {
   #onError(error: Error, currentRetryCount: number, nextTimeInterval: number) {
     this.#options.onError(error, currentRetryCount, nextTimeInterval);
     this.#errors.push(error);
+    this.#isMainErrorStale = true;
   }
 
   /**
@@ -254,6 +257,8 @@ export class RetryController {
       clearTimeout(this.#timeoutId);
     }
     this.#errors = [];
+    this.#isMainErrorStale = true;
+    this.#cachedMainError = null;
   }
 
   /**
@@ -280,7 +285,17 @@ export class RetryController {
    * @returns {Error | null}
    */
   get mainError() {
+    if (!this.#isMainErrorStale && this.#errors.length === 0) {
+      return null;
+    }
+
+    if (!this.#isMainErrorStale && this.#cachedMainError !== null) {
+      return this.#cachedMainError;
+    }
+
     if (this.#errors.length === 0) {
+      this.#cachedMainError = null;
+      this.#isMainErrorStale = false;
       return null;
     }
 
@@ -302,6 +317,8 @@ export class RetryController {
       }
     }
 
+    this.#cachedMainError = mainError;
+    this.#isMainErrorStale = false;
     return mainError;
   }
 }

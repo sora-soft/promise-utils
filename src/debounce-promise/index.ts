@@ -16,6 +16,10 @@ export interface DebouncePromiseOptions {
 /**
  * @description
  * Make function can be debounce.
+ * 
+ * All callers share the same execution result. If the wrapped function throws an error or returns a rejected promise, 
+ * all waiting callers will receive the same error.
+ * 
  * @example
  * import { DebouncePromise } from '@sora-soft/promise-utils';
  * const func = DebouncePromise(async value => {
@@ -24,10 +28,23 @@ export interface DebouncePromiseOptions {
  *   return value;
  * }, {milliseconds: 100});
  * const results = await Promise.all([1, 2, 3, 4, 5].map(value => func(value))); // [5, 5, 5, 5, 5]
+ * 
+ * @example
+ * // Error handling - all concurrent calls share the same error
+ * const debouncedFetch = DebouncePromise(fetch, { milliseconds: 300 });
+ * try {
+ *   const result = await debouncedFetch(url);
+ * } catch (error) {
+ *   // Handle error - all concurrent calls share this error
+ * }
+ * 
  * @template ArgumentsType, ReturnType
  * @param {Function} func
  * @param {DebouncePromiseOptions} options
- * @throws {TypeError}
+ * @throws {TypeError} When func is not provided
+ * @throws {TypeError} When options is not provided
+ * @throws {TypeError} When milliseconds is not a positive integer
+ * @throws {Error} When the wrapped function throws an error, all waiting callers will receive the same error
  * @returns {Function}
  * @public
  * @since 1.1.0

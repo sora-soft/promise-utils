@@ -411,3 +411,63 @@ test('TaskQueue pause', async (t) => {
     value: 4,
   }]);
 });
+
+test('TaskQueue addAll with failFast', async (t) => {
+  const queue = new PromiseQueue({concurrency: 2});
+
+  const tasks = [
+    async () => {
+      await delay(100);
+      return 'success';
+    },
+    async () => {
+      throw new Error('fail');
+    },
+    async () => {
+      await delay(200);
+      return 'too late';
+    },
+  ];
+
+  await t.throwsAsync(
+    queue.addAll(tasks, {failFast: true}),
+    {message: 'fail'},
+  );
+});
+
+test('TaskQueue addAll with failFast false (default)', async (t) => {
+  const queue = new PromiseQueue({concurrency: 2});
+
+  const tasks = [
+    async () => {
+      await delay(20);
+      return 'success';
+    },
+    async () => {
+      throw new Error('fail');
+    },
+  ];
+
+  const results = await queue.addAll(tasks) as PromiseSettledResult<string>[];
+  t.is(results.length, 2);
+  t.is(results[0].status, 'fulfilled');
+  t.is(results[1].status, 'rejected');
+});
+
+test('TaskQueue addAll with failFast true all success', async (t) => {
+  const queue = new PromiseQueue({concurrency: 2});
+
+  const tasks = [
+    async () => {
+      await delay(20);
+      return 'success1';
+    },
+    async () => {
+      await delay(20);
+      return 'success2';
+    },
+  ];
+
+  const results = await queue.addAll(tasks, {failFast: true});
+  t.deepEqual(results, ['success1', 'success2']);
+});
