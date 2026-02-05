@@ -510,7 +510,7 @@ try {
 }
 ```
 
-**重要提示**: 
+**重要提示**:
 - 如果第一个执行的请求失败，所有等待中的调用都会收到相同的错误
 - 建议在被包装函数内部实现错误恢复逻辑（如重试、降级等）
 - 对于需要独立错误处理的场景，考虑使用 `PromiseQueue` 代替
@@ -776,3 +776,7 @@ console.log(i) // 5
 可以查看[CancelablePromise的单元测试](src/cancelable-promise/index.spec.ts)
 
 建议使用[PromiseWithAbortSignal(可中断的Promise)](#promisewithabortsignal可中断的promise)
+
+Wiki pages you might want to explore:
+- [Home (sora-soft/promise-utils)](https://deepwiki.com/sora-soft/promise-utils#1)
+- [Composition and Integration (sora-soft/promise-utils)](https://deepwiki.com/sora-soft/promise-utils#3.1)
